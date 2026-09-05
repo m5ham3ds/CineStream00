@@ -57,6 +57,7 @@ fun ServerSelectionDialog(
     var extractedServers by remember { mutableStateOf<List<String>>(emptyList()) }
     var finalWatchUrl by remember { mutableStateOf<String?>(null) }
     var isFailed by remember { mutableStateOf(false) }
+    var bypassStatus by remember { mutableStateOf("CHECKING_CLOUDFLARE") }
 
     LaunchedEffect(currentSiteIndex) {
         if (currentSiteIndex >= prioritySites.size) {
@@ -66,6 +67,7 @@ fun ServerSelectionDialog(
         }
         
         currentSiteName = prioritySites[currentSiteIndex]
+        bypassStatus = "CHECKING_CLOUDFLARE"
         loadingMessage = "جاري الفحص في موقع $currentSiteName..."
         extractedServers = emptyList()
         finalWatchUrl = null
@@ -123,6 +125,20 @@ fun ServerSelectionDialog(
                         private var lastFailedSiteIndex = -1
 
                         @android.webkit.JavascriptInterface
+                        fun sendBypassStatus(status: String) {
+                            Handler(Looper.getMainLooper()).post {
+                                if (status == "NORMAL" && (bypassStatus == "CHECKING_CLOUDFLARE" || bypassStatus == "CLOUDFLARE")) {
+                                    bypassStatus = "VERIFIED"
+                                    Handler(Looper.getMainLooper()).postDelayed({
+                                        if (bypassStatus == "VERIFIED") bypassStatus = "NORMAL"
+                                    }, 1500)
+                                } else if (status == "CLOUDFLARE") {
+                                    bypassStatus = "CLOUDFLARE"
+                                }
+                            }
+                        }
+
+                        @android.webkit.JavascriptInterface
                         fun sendFailed() {
                             Handler(Looper.getMainLooper()).post {
                                 if (lastFailedSiteIndex != currentSiteIndex) {
@@ -166,10 +182,16 @@ fun ServerSelectionDialog(
                                     var intervalId = setInterval(function() {
                                         // Bypass Cloudflare
                                         var cf = document.querySelector('.cf-turnstile-wrapper, #challenge-stage, input[type="checkbox"], #challenge-form, .mark-as-human');
-                                        if (cf) { cf.click(); return; }
-                                        
                                         var isJustAMoment = document.title.includes('Just a moment') || document.title.includes('Cloudflare') || document.title.includes('Attention Required');
                                         var isCloudflare = cf || isJustAMoment;
+                                        
+                                        if (isCloudflare) {
+                                            if (typeof AndroidBridge !== 'undefined') AndroidBridge.sendBypassStatus("CLOUDFLARE");
+                                            if (cf) cf.click();
+                                            return;
+                                        } else {
+                                            if (typeof AndroidBridge !== 'undefined') AndroidBridge.sendBypassStatus("NORMAL");
+                                        }
 
                                         // 1. Search Results -> Click item
                                         if (loc.includes('?s=') || loc.includes('search') || loc.includes('query=')) {
@@ -334,9 +356,24 @@ fun ServerSelectionDialog(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 if (isLoading) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                    val progressColor = when (bypassStatus) {
+                        "CLOUDFLARE", "CHECKING_CLOUDFLARE" -> androidx.compose.ui.graphics.Color.Red
+                        "VERIFIED" -> androidx.compose.ui.graphics.Color.Green
+                        else -> MaterialTheme.colorScheme.primary
+                    }
+                    val textColor = when (bypassStatus) {
+                        "CLOUDFLARE", "CHECKING_CLOUDFLARE" -> androidx.compose.ui.graphics.Color.Red
+                        "VERIFIED" -> androidx.compose.ui.graphics.Color.Green
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                    val msg = when (bypassStatus) {
+                        "CLOUDFLARE", "CHECKING_CLOUDFLARE" -> "جاري عملية تحديث البيانات..."
+                        "VERIFIED" -> "تم تحديث البيانات بنجاح!"
+                        else -> loadingMessage
+                    }
+                    CircularProgressIndicator(color = progressColor)
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text(text = loadingMessage, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(text = msg, color = textColor, fontWeight = FontWeight.Bold)
                 } else if (isFailed) {
                     Text(
                         text = "عذراً، لم نتمكن من العثور على سيرفرات تعمل لهذا العمل في جميع المواقع المدعومة.",
