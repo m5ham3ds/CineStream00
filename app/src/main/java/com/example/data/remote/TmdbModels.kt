@@ -32,6 +32,7 @@ data class TmdbMovie(
 data class TmdbSeries(
     @Json(name = "id") val id: Int,
     @Json(name = "name") val name: String?,
+    @Json(name = "original_name") val originalName: String? = null,
     @Json(name = "overview") val overview: String?,
     @Json(name = "poster_path") val posterPath: String?,
     @Json(name = "backdrop_path") val backdropPath: String?,
@@ -50,7 +51,8 @@ data class TmdbMulti(
     @Json(name = "id") val id: Int,
     @Json(name = "media_type") val mediaType: String,
     @Json(name = "title") val title: String?, // Used for movies
-    @Json(name = "name") val name: String?,   // Used for series
+    @Json(name = "name") val name: String?,
+    @Json(name = "original_name") val originalName: String? = null,   // Used for series
     @Json(name = "poster_path") val posterPath: String?,
     @Json(name = "backdrop_path") val backdropPath: String?,
     @Json(name = "release_date") val releaseDate: String?,
@@ -154,6 +156,7 @@ data class TmdbMovieDetails(
 data class TmdbSeriesDetails(
     @Json(name = "id") val id: Int,
     @Json(name = "name") val name: String?,
+    @Json(name = "original_name") val originalName: String? = null,
     @Json(name = "overview") val overview: String?,
     @Json(name = "poster_path") val posterPath: String?,
     @Json(name = "backdrop_path") val backdropPath: String?,
@@ -177,6 +180,7 @@ data class TmdbSeriesDetails(
 data class TmdbEpisode(
     @Json(name = "id") val id: Int,
     @Json(name = "name") val name: String?,
+    @Json(name = "original_name") val originalName: String? = null,
     @Json(name = "overview") val overview: String?,
     @Json(name = "episode_number") val episodeNumber: Int,
     @Json(name = "still_path") val stillPath: String?,
@@ -213,6 +217,7 @@ data class TmdbPersonMovieCredit(
 data class TmdbPersonSeriesCredit(
     @Json(name = "id") val id: Int,
     @Json(name = "name") val name: String?,
+    @Json(name = "original_name") val originalName: String? = null,
     @Json(name = "overview") val overview: String?,
     @Json(name = "poster_path") val posterPath: String?,
     @Json(name = "backdrop_path") val backdropPath: String?,
@@ -232,6 +237,7 @@ data class TmdbPersonCombinedCredits(
 data class TmdbPersonDetails(
     @Json(name = "id") val id: Int,
     @Json(name = "name") val name: String?,
+    @Json(name = "original_name") val originalName: String? = null,
     @Json(name = "biography") val biography: String?,
     @Json(name = "profile_path") val profilePath: String?,
     @Json(name = "birthday") val birthday: String?,

@@ -219,6 +219,7 @@ override suspend fun getSeriesById(id: String): Series? = withContext(Dispatcher
         return Series(
             id = id.toString(),
             title = name ?: "Unknown",
+            originalTitle = originalName ?: name,
             overview = overview ?: "",
             posterUrl = fullPosterUrl,
             backdropUrl = fullBackdropUrl,
@@ -331,6 +332,7 @@ override suspend fun getSeriesById(id: String): Series? = withContext(Dispatcher
         return Series(
             id = id.toString(),
             title = name ?: "Unknown",
+            originalTitle = originalName ?: name,
             overview = overview ?: "",
             posterUrl = fullPosterUrl,
             backdropUrl = fullBackdropUrl,

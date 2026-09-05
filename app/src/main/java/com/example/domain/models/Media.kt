@@ -24,7 +24,7 @@ data class Movie(
     val year: Int,
     val rating: Double,
     val genres: List<String>,
-    val runtime: Int, // in minutes
+    val runtime: Int,
     val language: String = "en",
     val country: String? = null,
     val director: String? = null,
@@ -35,6 +35,7 @@ data class Movie(
 data class Series(
     val id: String,
     val title: String,
+    val originalTitle: String? = null,
     val overview: String,
     val posterUrl: String,
     val backdropUrl: String,
@@ -56,7 +57,7 @@ data class Season(
     val title: String,
     val posterUrl: String,
     val episodeCount: Int = 0,
-    val episodes: List<Episode> = emptyList() // populated later or alongside
+    val episodes: List<Episode> = emptyList()
 )
 
 data class Episode(
@@ -65,10 +66,9 @@ data class Episode(
     val title: String,
     val overview: String,
     val thumbnailUrl: String,
-    val duration: Int, // in minutes
+    val duration: Int,
     val rating: Double = 0.0
 )
-
 
 data class PersonDetails(
     val id: String,

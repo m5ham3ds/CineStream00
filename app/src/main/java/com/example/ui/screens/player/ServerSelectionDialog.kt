@@ -94,9 +94,9 @@ fun ServerSelectionDialog(
 
     val encodedTitle = URLEncoder.encode(title, "UTF-8")
     val searchUrl = when {
-        currentSiteName.contains("egydead") -> "https://$currentSiteName/page/1/?s=$encodedTitle"
+        currentSiteName.contains("egydead") -> "https://$currentSiteName/?s=$encodedTitle"
         currentSiteName.contains("qfilm") -> "https://$currentSiteName/search.php?keywords=$encodedTitle"
-        currentSiteName.contains("arabseed") -> "https://$currentSiteName/page/1/?s=$encodedTitle"
+        currentSiteName.contains("arabseed") -> "https://$currentSiteName/?s=$encodedTitle"
         currentSiteName.contains("stardima") -> "https://$currentSiteName/search?query=$encodedTitle&page=1"
         currentSiteName.contains("witanime") -> "https://$currentSiteName/?search_param=animes&s=$encodedTitle"
         currentSiteName.contains("anime4up") -> "https://$currentSiteName/?search_param=animes&s=$encodedTitle"
@@ -169,8 +169,8 @@ fun ServerSelectionDialog(
                                     finalWatchUrl = url
                                     extractedServers = servers
                                     isLoading = false
-                                    // Auto-play the first server immediately!
-                                    onPlay(url, servers.first(), currentSiteName)
+                                    
+                                    
                                 }
                             }
                         }

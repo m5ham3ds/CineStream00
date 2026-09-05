@@ -228,7 +228,7 @@ fun MovieDetailsScreen(
                     IconButton(
                         onClick = { 
                             scope.launch {
-                                val item = LibraryItem(id = movie.id, title = movie.title, posterUrl = movie.posterUrl, isMovie = true)
+                                val item = LibraryItem(id = movie.id, title = movie.originalTitle ?: movie.title, posterUrl = movie.posterUrl, isMovie = true)
                                 if (isFavorite) libraryRepository.removeFromLibrary(item)
                                 else libraryRepository.addToLibrary(item)
                             }
@@ -276,15 +276,16 @@ fun MovieDetailsScreen(
             }
             if (showSourceSheet) {
                 ServerSelectionDialog(
-                    title = movie.title,
+                    title = movie.originalTitle ?: movie.title,
                     isMovie = true,
+                    isAnime = movie.genres.any { it.contains("Animation", ignoreCase = true) || it.contains("Anime", ignoreCase = true) },
                     onDismiss = { showSourceSheet = false },
                     onPlay = { url, serverName, website ->
                         showSourceSheet = false
                         if (isDownloadMode) {
                             scope.launch {
                                 downloadRepository.addToDownloads(com.example.data.model.DownloadItem(
-                                    id = movie.id, title = movie.title, posterUrl = movie.posterUrl, isMovie = true, quality = serverName
+                                    id = movie.id, title = movie.originalTitle ?: movie.title, posterUrl = movie.posterUrl, isMovie = true, quality = serverName
                                 ))
                                 com.example.utils.AndroidDownloader.downloadVideo(context, url, "${movie.title} - $serverName")
                             }
@@ -293,7 +294,7 @@ fun MovieDetailsScreen(
                                 historyRepository.addToHistory(
                                     com.example.data.model.HistoryItem(
                                         id = movie.id,
-                                        title = movie.title,
+                                        title = movie.originalTitle ?: movie.title,
                                         posterUrl = movie.posterUrl,
                                         isMovie = true
                                     )
@@ -440,12 +441,12 @@ fun SeriesDetailsScreen(
                             onClick = {
                                 scope.launch {
                                     if (isFavorite) {
-                                        libraryRepository.removeFromLibrary(LibraryItem(id = series.id, title = series.title, posterUrl = series.posterUrl, isMovie = false))
+                                        libraryRepository.removeFromLibrary(LibraryItem(id = series.id, title = series.originalTitle ?: series.title, posterUrl = series.posterUrl, isMovie = false))
                                     } else {
                                         libraryRepository.addToLibrary(
                                             LibraryItem(
                                                 id = series.id,
-                                                title = series.title,
+                                                title = series.originalTitle ?: series.title,
                                                 posterUrl = series.posterUrl,
                                                 isMovie = false
                                             )
@@ -537,11 +538,11 @@ fun SeriesDetailsScreen(
             
             if (selectedEpisodeForSource != null) {
                 ServerSelectionDialog(
-                    title = series.title,
+                    title = series.originalTitle ?: series.title,
                     isMovie = false,
                     season = uiState.selectedSeason?.seasonNumber ?: 1,
                     episode = selectedEpisodeForSource?.episodeNumber ?: 1,
-                    isAnime = series.genres.any { it.contains("Anime", ignoreCase = true) },
+                    isAnime = series.genres.any { it.contains("Animation", ignoreCase = true) || it.contains("Anime", ignoreCase = true) },
                     onDismiss = { selectedEpisodeForSource = null },
                     onPlay = { url, serverName, website ->
                         val ep = selectedEpisodeForSource!!
