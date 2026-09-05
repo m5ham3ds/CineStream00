@@ -120,11 +120,11 @@ fun HiddenVideoExtractor(
                                     var iframes = document.getElementsByTagName('iframe');
                                     for (var i = 0; i < iframes.length; i++) {
                                         try {
-                                            var playBtn = iframes[i].contentWindow.document.querySelector('.play-button, .jw-icon-display, video, .vjs-big-play-button, .fp-play');
+                                            var playBtn = iframes[i].contentWindow.document.querySelector('.play-button, .jw-icon-display, video, .vjs-big-play-button, .fp-play, .play-icon, #play-video, .btn-play');
                                             if (playBtn) playBtn.click();
                                         } catch(e) {}
                                     }
-                                    var localPlay = document.querySelector('.play-button, .jw-icon-display, video, .vjs-big-play-button');
+                                    var localPlay = document.querySelector('.play-button, .jw-icon-display, video, .vjs-big-play-button, .fp-play, .play-icon, #play-video, .btn-play');
                                     if (localPlay) localPlay.click();
                                     
                                     // Some sites need us to click a watch button first
@@ -132,7 +132,7 @@ fun HiddenVideoExtractor(
                                     if(watchBtn && !loc.includes('watch')) watchBtn.click();
                                     
                                     // Some sites use servers list to load iframe
-                                    var serverList = document.querySelectorAll('ul.servers li, .server-list li, .serversList li, .watch-servers li, .list-servers li, .servers-list li, .mob-servers ul li, #servers li, .server_list li, .watch-btn, .DownloadServers li, ul#episode-servers li, ul.NavTabs li, .server-list a, .watch-servers a, .servers-container li, .btn-server, .servers a, .item-server, .server-item, .server-btn, .server-link, a.server-link, ul.donwload-servers-list li, .servers-container button');
+                                    var serverList = document.querySelectorAll('ul.servers li, .server-list li, .serversList li, .watch-servers li, .list-servers li, .servers-list li, .mob-servers ul li, #servers li, .server_list li, .watch-btn, .DownloadServers li, ul#episode-servers li, ul.NavTabs li, .server-list a, .watch-servers a, .servers-container li, .btn-server, .servers a, .item-server, .server-item, .server-btn, .server-link, a.server-link, ul.donwload-servers-list li, .servers-container button, ul.servers__list li, div.embeding ul li, ul#watch-servers-list li, button.watchButton, div.servers span.server a, div.watch--servers--list li.server--item, ul.WatchServers li, ul.list_servers li');
                                     var clickedTarget = false;
                                     
                                     if (targetServer === "السيرفر الرئيسي") {
