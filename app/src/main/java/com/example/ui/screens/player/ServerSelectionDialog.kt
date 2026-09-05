@@ -68,6 +68,7 @@ fun ServerSelectionDialog(
     var loadingMessage by remember { mutableStateOf("جاري الفحص وتخطي الحماية...") }
     
     var extractedServers by remember { mutableStateOf<List<String>>(emptyList()) }
+    var extractedServerLinks by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     var finalWatchUrl by remember { mutableStateOf<String?>(null) }
     var isFailed by remember { mutableStateOf(false) }
     var bypassStatus by remember { mutableStateOf("CHECKING_CLOUDFLARE") }
@@ -85,8 +86,18 @@ fun ServerSelectionDialog(
         extractedServers = emptyList()
         finalWatchUrl = null
         
-        // 25 seconds timeout per site to account for Cloudflare
-        delay(25000)
+        // Wait for up to 30 seconds, but check every 1 second if servers were found
+        var waited = 0
+        while (waited < 30) {
+            delay(1000)
+            waited++
+            if (extractedServers.isNotEmpty()) {
+                // Servers found! We can stop waiting.
+                return@LaunchedEffect
+            }
+        }
+        
+        // If we waited 30 seconds and still no servers, move to the next site
         if (extractedServers.isEmpty()) {
             currentSiteIndex++
         }
@@ -162,6 +173,32 @@ fun ServerSelectionDialog(
                         }
 
                         @android.webkit.JavascriptInterface
+                        fun sendServersV2(serversJson: String, url: String) {
+                            try {
+                                val serversData = org.json.JSONArray(serversJson)
+                                val serversNames = mutableListOf<String>()
+                                val serversMap = mutableMapOf<String, String>()
+                                
+                                for (i in 0 until serversData.length()) {
+                                    val item = serversData.getJSONObject(i)
+                                    val name = item.getString("name")
+                                    val link = item.getString("link")
+                                    serversNames.add(name)
+                                    serversMap[name] = link
+                                }
+                                
+                                if (serversNames.isNotEmpty() && extractedServers.isEmpty()) {
+                                    Handler(Looper.getMainLooper()).post {
+                                        finalWatchUrl = url
+                                        extractedServers = serversNames
+                                        extractedServerLinks = serversMap // We will store this in a state
+                                        isLoading = false
+                                    }
+                                }
+                            } catch (e: Exception) { e.printStackTrace() }
+                        }
+                        
+                        @android.webkit.JavascriptInterface
                         fun sendServers(serversStr: String, url: String) {
                             val servers = serversStr.split(",").filter { it.isNotBlank() }.distinct()
                             if (servers.isNotEmpty() && extractedServers.isEmpty()) {
@@ -228,19 +265,6 @@ fun ServerSelectionDialog(
                                         }
                                         
                                         // 2. Series Page -> Click Season/Episode
-                                        var serverList = document.querySelectorAll('ul.servers li, .server-list li, .serversList li, .watch-servers li, .list-servers li, .servers-list li, .mob-servers ul li, #servers li, .server_list li, .watch-btn, .DownloadServers li, ul#episode-servers li, ul.NavTabs li, .server-list a, .watch-servers a, .servers-container li, .btn-server, .servers a, .item-server, .server-item, .server-btn, .server-link, a.server-link, ul.donwload-servers-list li, .servers-container button');
-                                        var hasServers = serverList && serverList.length > 0;
-                                        
-                                        // Click play buttons or watch forms to reveal iframe if hidden
-                                        var playBtn = document.querySelector('.play-button, .jw-icon-display, video, .vjs-big-play-button, .play-icon, #play-video, .btn-play');
-                                        if (playBtn) playBtn.click();
-                                        
-                                        var watchNowBtn = document.querySelector('.watchNow button, .watchNow form button, .watch-btn, #watch-btn');
-                                        if (watchNowBtn && !hasServers && !hasIframe && !hasVideo) {
-                                            watchNowBtn.click();
-                                            return;
-                                        }
-                                        
                                         var iframes = document.querySelectorAll('iframe');
                                         var hasIframe = false;
                                         for(var i=0; i<iframes.length; i++) {
@@ -248,11 +272,75 @@ fun ServerSelectionDialog(
                                                 hasIframe = true; break;
                                             }
                                         }
-
                                         var videoTags = document.querySelectorAll('video');
                                         var hasVideo = videoTags.length > 0;
-
-                                        if (!isMovie && !hasServers && !hasIframe && !hasVideo) {
+                                        
+                                        var serverItems = [];
+                                        
+                                        // (A) Standard data-link, data-watch, data-src servers
+                                        var linkElements = document.querySelectorAll('[data-link], [data-watch], [data-src], ul#episode-servers li a.server-link');
+                                        for(var i=0; i<linkElements.length; i++) {
+                                            var el = linkElements[i];
+                                            var link = el.getAttribute('data-link') || el.getAttribute('data-watch') || el.getAttribute('data-src');
+                                            if(!link && el.hasAttribute('onclick')) {
+                                                // Try to extract from onclick="loadIframe(this, 'url')"
+                                                var onclickStr = el.getAttribute('onclick');
+                                                var m = onclickStr.match(/loadIframe\(this,\s*'([^']+)'\)/);
+                                                if(m) link = m[1];
+                                            }
+                                            if(!link && el.href && el.href.includes('http') && !el.href.includes(window.location.host)) {
+                                                link = el.href;
+                                            }
+                                            var name = el.innerText.trim() || el.getAttribute('title') || 'سيرفر ' + (i+1);
+                                            if (link && link.startsWith('http') && !link.includes('facebook') && !link.includes('twitter')) {
+                                                serverItems.push({ name: name, link: link });
+                                            }
+                                        }
+                                        
+                                        // (B) qfilm (Array of iframes in 'servers' variable)
+                                        if (typeof servers !== 'undefined' && Array.isArray(servers)) {
+                                            var btnNames = document.querySelectorAll('button.server-btn');
+                                            for(var i=0; i<servers.length; i++) {
+                                                var html = servers[i];
+                                                var srcMatch = html.match(/src=["']([^"']+)["']/);
+                                                if (srcMatch) {
+                                                    var name = btnNames[i] ? btnNames[i].innerText.trim() : 'سيرفر ' + (i+1);
+                                                    serverItems.push({ name: name, link: srcMatch[1] });
+                                                }
+                                            }
+                                        }
+                                        
+                                        // (C) topcinema & arabseed (data-server IDs)
+                                        var serverList = document.querySelectorAll('ul.WatchServers li.server--item, ul.servers__list li, .servers-list li, .serversList li, ul.servers li, .mob-servers ul li');
+                                        for(var i=0; i<serverList.length; i++) {
+                                            var el = serverList[i];
+                                            var serverId = el.getAttribute('data-server');
+                                            var link = el.getAttribute('data-link');
+                                            var name = el.querySelector('span') ? el.querySelector('span').innerText : el.innerText.trim();
+                                            if (!name) name = 'سيرفر ' + (i+1);
+                                            
+                                            // If we already added this via data-link, skip
+                                            var alreadyAdded = false;
+                                            for(var j=0; j<serverItems.length; j++){ if(serverItems[j].name === name) alreadyAdded=true; }
+                                            
+                                            if (!alreadyAdded) {
+                                                if (link && link.startsWith('http')) {
+                                                    serverItems.push({ name: name, link: link });
+                                                } else if (serverId !== null) {
+                                                    serverItems.push({ name: name, link: window.location.href, id: serverId });
+                                                } else {
+                                                    serverItems.push({ name: name, link: window.location.href });
+                                                }
+                                            }
+                                        }
+                                        
+                                        var watchNowBtn = document.querySelector('.watchNow button, .watchNow form button, .watch-btn, #watch-btn');
+                                        if (watchNowBtn && serverItems.length === 0 && !hasIframe && !hasVideo) {
+                                            watchNowBtn.click();
+                                            return;
+                                        }
+                                        
+                                        if (!isMovie && serverItems.length === 0 && !hasIframe && !hasVideo) {
                                             var epLinks = document.querySelectorAll('.episodes__list li a, .EpsList li a, .episodes-list li a, .all-episodes-list li a, .SeasonsEpisodes a, .episodelist a, .episodes a, .ListEp a, ul.episodes li a, .ep-card a, .episode-card a, .List-Episodes a, .list-episodes a, .EpisodesList a, .eplist a, .episode-list a');
                                             if (epLinks.length > 0) {
                                                 clearInterval(intervalId);
@@ -279,36 +367,38 @@ fun ServerSelectionDialog(
                                         }
                                         
                                         // 3. Extract Servers on Watch Page
-                                        if (hasServers || hasIframe || hasVideo) {
-                                            var serverNames = [];
-                                            if (hasServers) {
-                                                for(var i=0; i<serverList.length; i++) {
-                                                    var serverName = serverList[i].innerText.trim();
-                                                    if (serverName) {
-                                                        var sName = serverName.replace(/1080p|720p|480p|360p|240p|1080|720|480|360|240/gi, '').trim();
-                                                        if (sName === "" || sName.includes('جودة') || sName.includes('FHD') || sName.includes('HD') || sName.includes('SD')) {
-                                                            sName = "سيرفر " + (i+1);
-                                                        }
-                                                        serverNames.push(sName);
+                                        if (serverItems.length > 0) {
+                                            clearInterval(intervalId);
+                                            if (typeof AndroidBridge !== 'undefined') {
+                                                // Clean up names
+                                                var finalItems = [];
+                                                for(var i=0; i<serverItems.length; i++){
+                                                    var sName = serverItems[i].name.replace(/1080p|720p|480p|360p|240p|1080|720|480|360|240/gi, '').trim();
+                                                    if (sName === "" || sName.includes('جودة') || sName.includes('FHD') || sName.includes('HD') || sName.includes('SD')) {
+                                                        sName = "سيرفر " + (i+1);
                                                     }
+                                                    serverItems[i].name = sName;
+                                                    
+                                                    // Ensure unique names
+                                                    var exists = false;
+                                                    for(var j=0; j<finalItems.length; j++){ if(finalItems[j].name === sName) exists = true; }
+                                                    if(!exists) finalItems.push(serverItems[i]);
                                                 }
+                                                AndroidBridge.sendServersV2(JSON.stringify(finalItems), window.location.href);
                                             }
-                                            if (serverNames.length === 0 && (hasIframe || hasVideo)) {
-                                                serverNames.push("السيرفر الرئيسي");
-                                            }
-                                            
-                                            if (serverNames.length > 0) {
-                                                // Make unique
-                                                var uniqueServers = [...new Set(serverNames)];
-                                                clearInterval(intervalId);
-                                                if (typeof AndroidBridge !== 'undefined') {
-                                                    AndroidBridge.sendServers(uniqueServers.join(','), window.location.href);
-                                                }
-                                                return;
-                                            }
+                                            return;
                                         }
                                         
-                                        // 4. Fast Fail (if no search results or servers found after loading)
+                                        if (serverItems.length === 0 && (hasIframe || hasVideo)) {
+                                            clearInterval(intervalId);
+                                            if (typeof AndroidBridge !== 'undefined') {
+                                                var finalItems = [{ name: "السيرفر الرئيسي", link: window.location.href }];
+                                                AndroidBridge.sendServersV2(JSON.stringify(finalItems), window.location.href);
+                                            }
+                                            return;
+                                        }
+                                        
+                                        // 4. Fast Fail
                                         if (!isCloudflare && document.readyState === 'complete') {
                                             window._failCount = (window._failCount || 0) + 1;
                                             if (window._failCount >= 6) {
@@ -548,7 +638,7 @@ Dialog(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        onPlay(finalWatchUrl ?: searchUrl, server, currentSiteName)
+                                        onPlay(extractedServerLinks[server] ?: finalWatchUrl ?: searchUrl, server, currentSiteName)
                                     },
                                 colors = CardDefaults.cardColors(
                                     containerColor = Color(0xFF222225)

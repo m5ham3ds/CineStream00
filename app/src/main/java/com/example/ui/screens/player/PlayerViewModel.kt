@@ -136,8 +136,15 @@ class PlayerViewModel : ViewModel() {
 
     fun setExtractedUrl(url: String) {
         extractionTimeoutJob?.cancel()
-        // Only set if we don't already have one, or if it's a new quality selection
-        if (_uiState.value.currentVideoUrl != url) {
+        // If it's an iframe/embed URL, treat it as an intermediate extraction source
+        if (url.contains("iframe") || url.contains("embed") || url.contains("/player/") || url.contains("megamax.me")) {
+            _uiState.value = _uiState.value.copy(
+                extractionUrl = url,
+                isLoading = true,
+                currentVideoUrl = null
+            )
+            startExtractionTimeout()
+        } else if (_uiState.value.currentVideoUrl != url) {
             _uiState.value = _uiState.value.copy(
                 currentVideoUrl = url,
                 isLoading = false

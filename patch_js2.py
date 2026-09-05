@@ -1,15 +1,16 @@
 import re
 import json
 
-def patch_server_selection():
-    with open('app/src/main/java/com/example/ui/screens/player/ServerSelectionDialog.kt', 'r') as f:
-        content = f.read()
+with open('app/src/main/java/com/example/ui/screens/player/ServerSelectionDialog.kt', 'r') as f:
+    content = f.read()
 
-    # We need to replace the JavaScript inside ServerSelectionDialog.kt
-    # We will replace the whole interval logic with the advanced one provided by the user reports.
+start_idx = content.find("var intervalId = setInterval(function() {")
+end_idx = content.find("})();", start_idx)
 
-    js_code = """
-                                    var intervalId = setInterval(function() {
+if start_idx != -1 and end_idx != -1:
+    old_js = content[start_idx:end_idx]
+    
+    new_js = """var intervalId = setInterval(function() {
                                         // Bypass Cloudflare
                                         var cf = document.querySelector('.cf-turnstile-wrapper, #challenge-stage, input[type="checkbox"], #challenge-form, .mark-as-human');
                                         var isJustAMoment = document.title.includes('Just a moment') || document.title.includes('Cloudflare') || document.title.includes('Attention Required');
@@ -71,7 +72,7 @@ def patch_server_selection():
                                             if(!link && el.href && el.href.includes('http') && !el.href.includes(window.location.host)) {
                                                 link = el.href;
                                             }
-                                            var name = el.innerText.trim() || el.getAttribute('title') || el.parentElement?.className?.replace('server', '').trim() || 'سيرفر ' + (i+1);
+                                            var name = el.innerText.trim() || el.getAttribute('title') || 'سيرفر ' + (i+1);
                                             if (link && link.startsWith('http') && !link.includes('facebook') && !link.includes('twitter')) {
                                                 serverItems.push({ name: name, link: link });
                                             }
@@ -107,11 +108,8 @@ def patch_server_selection():
                                                 if (link && link.startsWith('http')) {
                                                     serverItems.push({ name: name, link: link });
                                                 } else if (serverId !== null) {
-                                                    // We can't get the direct link yet, so pass the current page URL with a hash or just the current URL
-                                                    // We will click it in VideoExtractor
                                                     serverItems.push({ name: name, link: window.location.href, id: serverId });
                                                 } else {
-                                                    // Just a normal list item that we might have to click
                                                     serverItems.push({ name: name, link: window.location.href });
                                                 }
                                             }
@@ -189,13 +187,47 @@ def patch_server_selection():
                                                 if (typeof AndroidBridge !== 'undefined') AndroidBridge.sendFailed();
                                             }
                                         }
-                                    }, 1500);
-"""
-
-    pattern = r"var intervalId = setInterval\(function\(\) \{.*?window\._failCount >= 6\).*?\}\).*?\}, 1500\);"
-    content = re.sub(pattern, js_code.strip(), content, flags=re.DOTALL)
+                                    }, 1500);\n                                """
     
+    content = content.replace(old_js, new_js)
+    
+    # We need to add the sendServersV2 function inside the JavascriptInterface
+    interface_code = """
+                        @android.webkit.JavascriptInterface
+                        fun sendServers(serversStr: String, url: String) {
+"""
+    new_interface_code = """
+                        @android.webkit.JavascriptInterface
+                        fun sendServersV2(serversJson: String, url: String) {
+                            try {
+                                val serversData = org.json.JSONArray(serversJson)
+                                val serversNames = mutableListOf<String>()
+                                val serversMap = mutableMapOf<String, String>()
+                                
+                                for (i in 0 until serversData.length()) {
+                                    val item = serversData.getJSONObject(i)
+                                    val name = item.getString("name")
+                                    val link = item.getString("link")
+                                    serversNames.add(name)
+                                    serversMap[name] = link
+                                }
+                                
+                                if (serversNames.isNotEmpty() && extractedServers.isEmpty()) {
+                                    Handler(Looper.getMainLooper()).post {
+                                        finalWatchUrl = url
+                                        extractedServers = serversNames
+                                        extractedServerLinks = serversMap // We will store this in a state
+                                        isLoading = false
+                                    }
+                                }
+                            } catch (e: Exception) { e.printStackTrace() }
+                        }
+                        
+                        @android.webkit.JavascriptInterface
+                        fun sendServers(serversStr: String, url: String) {
+"""
+    content = content.replace(interface_code, new_interface_code)
+
     with open('app/src/main/java/com/example/ui/screens/player/ServerSelectionDialog.kt', 'w') as f:
         f.write(content)
 
-patch_server_selection()
