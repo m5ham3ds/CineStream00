@@ -110,10 +110,8 @@ fun HiddenVideoExtractor(
                                     try {
                                         var iframesCF = document.querySelectorAll('iframe');
                                         for (var i = 0; i < iframesCF.length; i++) {
-                                            try {
-                                                var innerBtn = iframesCF[i].contentWindow.document.querySelector('input[type="checkbox"]');
-                                                if (innerBtn) innerBtn.click();
-                                            } catch (err) {}
+                                            var innerBtn = iframesCF[i].contentWindow.document.querySelector('input[type="checkbox"]');
+                                            if (innerBtn) innerBtn.click();
                                         }
                                     } catch(e) {}
 
@@ -128,11 +126,17 @@ fun HiddenVideoExtractor(
                                     if (localPlay) localPlay.click();
                                     
                                     // Some sites need us to click a watch button first
-                                    var watchBtn = document.querySelector('.watch-btn, #watch-btn, a.watch, .btn-watch, .play-btn');
-                                    if(watchBtn && !loc.includes('watch')) watchBtn.click();
+                                    var watchBtnFirst = document.querySelector('.watch-btn, #watch-btn, a.watch, .btn-watch, .play-btn');
+                                    if(watchBtnFirst && !loc.includes('watch')) watchBtnFirst.click();
                                     
                                     // Some sites use servers list to load iframe
                                     var serverList = document.querySelectorAll('ul.servers li, .server-list li, .serversList li, .watch-servers li, .list-servers li, .servers-list li, .mob-servers ul li, #servers li, .server_list li, .watch-btn, .DownloadServers li, ul#episode-servers li, ul.NavTabs li, .server-list a, .watch-servers a, .servers-container li, .btn-server, .servers a, .item-server, .server-item, .server-btn, .server-link, a.server-link, ul.donwload-servers-list li, .servers-container button, ul.servers__list li, div.embeding ul li, ul#watch-servers-list li, button.watchButton, div.servers span.server a, div.watch--servers--list li.server--item, ul.WatchServers li, ul.list_servers li');
+                                    
+                                    // Some sites need us to click a watch button or submit a form first
+                                    var watchBtnForm = document.querySelector('.watch-btn, #watch-btn, a.watch, .btn-watch, .play-btn, .watchNow button, .watchNow form button');
+                                    if(watchBtnForm && (!serverList || serverList.length === 0)) {
+                                        watchBtnForm.click();
+                                    }
                                     var clickedTarget = false;
                                     
                                     if (targetServer === "السيرفر الرئيسي") {
