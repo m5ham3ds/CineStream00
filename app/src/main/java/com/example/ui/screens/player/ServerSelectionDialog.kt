@@ -281,7 +281,7 @@ fun ServerSelectionDialog(
             },
             update = { webView ->
                 val lastUrl = webView.getTag(com.example.R.id.tag_url) as? String
-                if (lastUrl != watchUrlToLoad) {
+                if (watchUrlToLoad != null && lastUrl != watchUrlToLoad) {
                     webView.setTag(com.example.R.id.tag_url, watchUrlToLoad)
                     webView.loadUrl(watchUrlToLoad!!)
                 }
