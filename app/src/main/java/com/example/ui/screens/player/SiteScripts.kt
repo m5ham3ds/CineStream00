@@ -239,7 +239,7 @@ object SiteScripts {
                         if (results && results.length > 0) {
                             var targetResult = results[0];
                             if (!${isMovie}) {
-                                var e = ${episode}.toString();
+                                var e = '${episode}';
                                 for (var i=0; i<results.length; i++) {
                                     var txt = decodeURIComponent(results[i].href || "").toLowerCase() + " " + (results[i].innerText || results[i].title || results[i].getAttribute('title') || "").toLowerCase();
                                     if (txt.includes('حلقة ' + e) || txt.includes('حلقه ' + e) || txt.includes('-' + e + '-') || txt.includes('ep ' + e) || txt.includes('episode ' + e) || txt.includes(' ' + e + ' ')) {
@@ -258,7 +258,7 @@ object SiteScripts {
                         var epLinks = document.querySelectorAll('.episodes__list li a, .EpsList li a, .episodes-list li a, .all-episodes-list li a, .SeasonsEpisodes a, .episodelist a, .episodes a, .ListEp a, ul.episodes li a, .ep-card a, .episode-card a, .List-Episodes a, .list-episodes a, .EpisodesList a, .eplist a, .episode-list a, ul#episodes-list-container li.episode-list-item a, .tabcontent ul a');
                         if (epLinks.length > 0) {
                             var targetEp = null;
-                            var e = ${episode}.toString();
+                            var e = '${episode}';
                             for(var i=0; i<epLinks.length; i++) {
                                 var text = epLinks[i].innerText || "";
                                 if(text.trim() === e || text.includes(" " + e + " ") || text.includes("حلقة " + e) || text.includes("الحلقة " + e)) {
