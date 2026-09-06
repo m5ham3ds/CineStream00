@@ -128,7 +128,10 @@ object SiteScripts {
                     var currentSrc = currentIframe ? currentIframe.getAttribute('src') : '';
                     
                     for (var i = 0; i < items.length; i++) {
-                        var name = items[i].querySelector('span') ? items[i].querySelector('span').innerText.trim() : ('سيرفر ' + (i+1));
+                        var name = items[i].innerText.trim() || items[i].textContent.trim();
+if (!name) { var s = items[i].querySelector('span'); if (s) name = s.innerText.trim(); }
+if (!name) name = 'سيرفر ' + (i+1);
+
                         var link = items[i].getAttribute('data-player-url') || currentSrc;
                         if (!link) {
                             var meta = document.querySelector('meta[itemprop="contentURL"]');
@@ -141,7 +144,7 @@ object SiteScripts {
                     var items = document.querySelectorAll('#watch-servers-list li');
                     if (items.length === 0) items = document.querySelectorAll('.servList li');
                     for (var i = 0; i < items.length; i++) {
-                        var name = items[i].innerText.replace(/[^\w\s\u0600-\u06FF]/g, '').trim() || ('سيرفر ' + (i+1));
+                        var name = items[i].innerText.trim() || items[i].textContent.trim() || ('سيرفر ' + (i+1));
                         var onclick = items[i].getAttribute('onclick');
                         var url = '';
                         if (onclick) {
@@ -226,8 +229,9 @@ object SiteScripts {
                         if(!link && el.href && el.href.includes('http') && !el.href.includes(window.location.host)) {
                             link = el.href;
                         }
-                        var name = el.querySelector('span') ? el.querySelector('span').innerText.trim() : el.innerText.trim();
-                        name = name.replace(/[^\w\s\u0600-\u06FF]/g, '').trim() || 'سيرفر ' + (i+1);
+                        var name = el.innerText.trim() || el.textContent.trim();
+                        if (!name) { var s = el.querySelector('span'); if (s) name = s.innerText.trim(); }
+                        if (!name) name = 'سيرفر ' + (i+1);
                         if(link) serverItems.push({ name: name, link: link });
                     });
                 }

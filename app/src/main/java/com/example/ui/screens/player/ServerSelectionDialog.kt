@@ -1,4 +1,5 @@
 package com.example.ui.screens.player
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 
 import android.annotation.SuppressLint
 import android.os.Handler
@@ -72,6 +73,11 @@ fun ServerSelectionDialog(
     var finalWatchUrl by remember { mutableStateOf<String?>(null) }
     var isFailed by remember { mutableStateOf(false) }
     var bypassStatus by remember { mutableStateOf("CHECKING_CLOUDFLARE") }
+
+    var selectedServerToExtract by remember { mutableStateOf<String?>(null) }
+    var selectedServerUrlToExtract by remember { mutableStateOf<String?>(null) }
+    var isExtractingQualities by remember { mutableStateOf(false) }
+    var availableQualities by remember { mutableStateOf<List<com.example.utils.M3U8Parser.QualityInfo>>(emptyList()) }
 
     LaunchedEffect(currentSiteIndex) {
         if (currentSiteIndex >= prioritySites.size) {
@@ -459,6 +465,63 @@ Dialog(
                         style = MaterialTheme.typography.bodyLarge,
                         textAlign = TextAlign.Center
                     )
+                } else if (isExtractingQualities) {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    CircularProgressIndicator(color = activeColor, modifier = Modifier.size(48.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "جاري استخراج الجودات المتاحة...",
+                        color = Color.White,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                } else if (availableQualities.isNotEmpty()) {
+                    Text(
+                        text = "اختر الجودة المناسبة:",
+                        color = Color(0xFF00C853),
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                    
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth().heightIn(max = 300.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(availableQualities) { quality ->
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        onPlay(quality.url, "${selectedServerToExtract} - ${quality.name}", currentSiteName)
+                                    },
+                                colors = CardDefaults.cardColors(
+                                    containerColor = Color(0xFF222225)
+                                ),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Icon(
+                                        imageVector = androidx.compose.material.icons.Icons.Outlined.Storage,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = quality.name,
+                                        color = Color.White,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    }
                 } else if (extractedServers.isNotEmpty()) {
                     Text(
                         text = "تم جلب السيرفرات من: $currentSiteName",
@@ -476,7 +539,10 @@ Dialog(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        onPlay(extractedServerLinks[server] ?: finalWatchUrl ?: searchUrl, server, currentSiteName)
+                                        selectedServerToExtract = server
+                                        selectedServerUrlToExtract = extractedServerLinks[server] ?: finalWatchUrl ?: searchUrl
+                                        availableQualities = emptyList()
+                                        isExtractingQualities = true
                                     },
                                 colors = CardDefaults.cardColors(
                                     containerColor = Color(0xFF222225)
