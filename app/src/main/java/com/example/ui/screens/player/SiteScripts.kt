@@ -305,8 +305,28 @@ object SiteScripts {
                 }
 
                 if (!isCloudflare && document.readyState === 'complete') {
+                    var loc = window.location.href.toLowerCase();
+                    var hasSearch = loc.includes('?s=') || loc.includes('?keywords=') || loc.includes('?search') || loc.includes('?query=');
+                    
+                    var isHome = false;
+                    try {
+                        var u = new URL(loc);
+                        isHome = (u.pathname === '/' || u.pathname === '') && u.search === '';
+                    } catch(e) {}
+                    
+                    var pageText = document.body ? document.body.innerText : "";
+                    var notFound = pageText.includes("لا توجد نتائج") || pageText.includes("لم يتم العثور") || pageText.includes("لا يوجد") || pageText.includes("الصفحة غير موجودة") || pageText.includes("404") || pageText.includes("not found");
+
+                    // If redirected to home page (lost search query) or explicitly no results found, fail instantly.
+                    if (isHome || notFound) {
+                        clearInterval(intervalId);
+                        if (typeof AndroidBridge !== 'undefined') AndroidBridge.sendFailed();
+                        return;
+                    }
+
+                    // Otherwise wait up to 4 intervals (6 seconds) before giving up
                     window._failCount = (window._failCount || 0) + 1;
-                    if (window._failCount >= 8) { // 12 seconds
+                    if (window._failCount >= 4) { 
                         clearInterval(intervalId);
                         if (typeof AndroidBridge !== 'undefined') AndroidBridge.sendFailed();
                     }
