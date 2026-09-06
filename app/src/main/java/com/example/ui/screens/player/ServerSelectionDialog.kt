@@ -74,6 +74,13 @@ fun ServerSelectionDialog(
     var isFailed by remember { mutableStateOf(false) }
     var bypassStatus by remember { mutableStateOf("CHECKING_CLOUDFLARE") }
     var showCancelConfirmDialog by remember { mutableStateOf(false) }
+    var retryTrigger by remember { mutableIntStateOf(0) }
+
+    // --- Quality Extraction States ---
+    var selectedServerForQuality by remember { mutableStateOf<String?>(null) }
+    var isExtractingQuality by remember { mutableStateOf(false) }
+    var qualityExtractionMessage by remember { mutableStateOf("جاري استخراج الجودات المتاحة...") }
+    var extractedQualities by remember { mutableStateOf<List<com.example.utils.M3U8Parser.QualityInfo>>(emptyList()) }
 
     LaunchedEffect(currentSiteIndex) {
         if (currentSiteIndex >= prioritySites.size) {
@@ -130,7 +137,8 @@ fun ServerSelectionDialog(
     }
 
     if (isLoading && !isFailed) {
-        AndroidView(
+        key(retryTrigger) {
+            AndroidView(
             modifier = Modifier.size(1.dp).alpha(0.01f),
             factory = { ctx ->
                 WebView(ctx).apply {
@@ -248,6 +256,7 @@ fun ServerSelectionDialog(
                 }
             }
         )
+        }
     }
 
 Dialog(
@@ -310,11 +319,18 @@ Dialog(
                     Box(
                         modifier = Modifier
                             .size(48.dp)
-                            .background(Color(0xFF330000), CircleShape),
+                            .background(Color(0xFF330000), CircleShape)
+                            .clickable {
+                                if (selectedServerForQuality != null) {
+                                    selectedServerForQuality = null
+                                    extractedQualities = emptyList()
+                                    isExtractingQuality = false
+                                }
+                            },
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = androidx.compose.material.icons.Icons.Outlined.CloudDownload,
+                            imageVector = if (selectedServerForQuality != null) androidx.compose.material.icons.Icons.Default.ArrowBack else androidx.compose.material.icons.Icons.Outlined.CloudDownload,
                             contentDescription = null,
                             tint = Color.White,
                             modifier = Modifier.size(24.dp)
@@ -479,50 +495,197 @@ Dialog(
                         style = MaterialTheme.typography.bodyLarge,
                         textAlign = TextAlign.Center
                     )
-                } else if (extractedServers.isNotEmpty()) {
-                    Text(
-                        text = "تم جلب السيرفرات من: $currentSiteName",
-                        color = Color(0xFF00C853),
-                        style = MaterialTheme.typography.labelLarge,
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
-                    
-                    LazyColumn(
-                        modifier = Modifier.fillMaxWidth().heightIn(max = 300.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Button(
+                        onClick = {
+                            isFailed = false
+                            isLoading = true
+                            currentSiteIndex = 0
+                            currentSiteName = prioritySites[0]
+                            retryTrigger++
+                        },
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE50914))
                     ) {
-                        items(extractedServers) { server ->
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        val urlToPlay = extractedServerLinks[server] ?: finalWatchUrl ?: searchUrl
-                                        onPlay(urlToPlay, server, currentSiteName)
-                                    },
-                                colors = CardDefaults.cardColors(
-                                    containerColor = Color(0xFF222225)
-                                ),
-                                shape = RoundedCornerShape(12.dp)
+                        Text("إعادة المحاولة مجدداً", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                } else if (extractedServers.isNotEmpty()) {
+                    if (selectedServerForQuality != null) {
+                        if (isExtractingQuality) {
+                            CircularProgressIndicator(
+                                color = Color(0xFFE50914),
+                                modifier = Modifier.size(50.dp)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = qualityExtractionMessage,
+                                color = Color.White,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center,
+                                maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "السيرفر: $selectedServerForQuality",
+                                color = Color.Gray,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        } else if (extractedQualities.isNotEmpty()) {
+                            Text(
+                                text = "اختر الجودة ($selectedServerForQuality)",
+                                color = Color(0xFFE50914),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(bottom = 16.dp)
+                            )
+                            
+                            LazyColumn(
+                                modifier = Modifier.fillMaxWidth().heightIn(max = 300.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Row(
+                                items(extractedQualities) { quality ->
+                                    Card(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                val serverAndQuality = "$selectedServerForQuality - ${quality.name}"
+                                                onPlay(quality.url, serverAndQuality, currentSiteName)
+                                            },
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = Color(0xFF222225)
+                                        ),
+                                        shape = RoundedCornerShape(12.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(16.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.Center
+                                        ) {
+                                            Text(
+                                                text = quality.name,
+                                                color = Color.White,
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            Spacer(modifier = Modifier.height(16.dp))
+                            TextButton(onClick = { 
+                                selectedServerForQuality = null
+                                extractedQualities = emptyList()
+                            }) {
+                                Text("العودة لاختيار سيرفر آخر", color = Color.LightGray)
+                            }
+                        }
+                    } else {
+                        Text(
+                            text = "تم جلب السيرفرات من: $currentSiteName",
+                            color = Color(0xFF00C853),
+                            style = MaterialTheme.typography.labelLarge,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
+                        
+                        LazyColumn(
+                            modifier = Modifier.fillMaxWidth().heightIn(max = 300.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(extractedServers) { server ->
+                                Card(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(16.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center
+                                        .clickable {
+                                            selectedServerForQuality = server
+                                            isExtractingQuality = true
+                                            extractedQualities = emptyList()
+                                        },
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = Color(0xFF222225)
+                                    ),
+                                    shape = RoundedCornerShape(12.dp)
                                 ) {
-                                    Text(
-                                        text = server,
-                                        color = Color.White,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold
-                                    )
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        Text(
+                                            text = server,
+                                            color = Color.White,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
                                 }
+                            }
+                        }
+                        
+                        if (currentSiteIndex < prioritySites.size - 1) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            TextButton(
+                                onClick = {
+                                    currentSiteIndex++
+                                    currentSiteName = prioritySites[currentSiteIndex]
+                                    extractedServers = emptyList()
+                                    extractedServerLinks = emptyMap()
+                                    isLoading = true
+                                    isFailed = false
+                                    retryTrigger++
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("البحث في موقع آخر", color = Color(0xFF00C853))
                             }
                         }
                     }
                 }
+        
+        // Hidden Extractor for Quality
+        if (isExtractingQuality && selectedServerForQuality != null) {
+            LaunchedEffect(selectedServerForQuality) {
+                kotlinx.coroutines.delay(12000)
+                if (isExtractingQuality && extractedQualities.isEmpty()) {
+                    val serverUrl = extractedServerLinks[selectedServerForQuality] ?: finalWatchUrl ?: searchUrl
+                    extractedQualities = listOf(com.example.utils.M3U8Parser.QualityInfo("جودة أصلية (Default)", serverUrl))
+                    isExtractingQuality = false
+                }
             }
+            val serverUrl = extractedServerLinks[selectedServerForQuality] ?: finalWatchUrl ?: searchUrl
+            HiddenVideoExtractor(
+                url = serverUrl,
+                isMovie = isMovie,
+                season = season,
+                episode = episode,
+                targetServer = selectedServerForQuality,
+                targetServerId = com.example.ui.screens.player.ServerStateStore.extractedServerIds[selectedServerForQuality],
+                onVideoUrlFound = { url ->
+                    if (url.contains(".m3u8")) {
+                        coroutineScope.launch {
+                            qualityExtractionMessage = "جاري تحليل الجودات..."
+                            val qualities = com.example.utils.M3U8Parser.getQualities(url)
+                            extractedQualities = qualities
+                            isExtractingQuality = false
+                        }
+                    } else {
+                        // Not an m3u8, just show default
+                        extractedQualities = listOf(com.example.utils.M3U8Parser.QualityInfo("جودة أصلية (Default)", url))
+                        isExtractingQuality = false
+                    }
+                },
+                onIframeUrlFound = { iframeUrl ->
+                    // Sometimes we get a new iframe url, we should probably follow it or just return it as quality
+                    extractedQualities = listOf(com.example.utils.M3U8Parser.QualityInfo("جودة أصلية (Default)", iframeUrl))
+                    isExtractingQuality = false
+                }
+            )
         }
         
         if (showCancelConfirmDialog) {
@@ -559,6 +722,8 @@ Dialog(
     }
 }
 
+}
+}
 @Composable
 fun StatusBadge(text: String, icon: androidx.compose.ui.graphics.vector.ImageVector, statusColor: Color, modifier: Modifier = Modifier) {
     Row(
