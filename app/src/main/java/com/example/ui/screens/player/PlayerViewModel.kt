@@ -56,13 +56,20 @@ class PlayerViewModel : ViewModel() {
         val hasArabic = initialTitle.any { it in '؀'..'ۿ' }
         val isAnime = initialTitle.contains("anime", ignoreCase = true) || initialTitle.contains("أنمي", ignoreCase = true)
         
-        val allAnimeSites = listOf("WitAnime", "Anime4up", "AnimeBlkom", "Animeat", "Arabanime", "Animerco", "AnimeLuxe", "Stardima", "Watch Stardima")
-        val allMovieSeriesSites = listOf("EgyDead TV10", "QFilm", "TopCinema", "Laaroza", "Almeshkah", "ArabSeed Wine", "ArabSeed", "Egy Best", "CimaLight", "Brstej")
+        val allAnimeSites = listOf(
+            "witanime.you", "w1.anime4up.rest", "animeblkom.net", "animeat.net", 
+            "arabanime.net", "det.animerco.org", "vip.animeluxe.org"
+        )
+        val allMovieSeriesSites = listOf(
+            "tv10.egydead.live", "a.qfilm.tv", "egybests.live", "arabseed.wine", 
+            "topcinema.io", "z1.almeshkah.net", "arabseed-tv.com", "e.cimalight.co", 
+            "stardima.com", "watch.stardima.com", "uo.brstej.com", "laaroza.space"
+        )
 
         val fallbackList = when {
-            isAnime -> listOf("WitAnime", "Anime4up", "AnimeBlkom") + allAnimeSites.filter { it !in listOf("WitAnime", "Anime4up", "AnimeBlkom") }
-            isMovie -> listOf("EgyDead TV10", "QFilm", "TopCinema") + allMovieSeriesSites.filter { it !in listOf("EgyDead TV10", "QFilm", "TopCinema") }
-            else -> listOf("TopCinema", "EgyDead TV10", "Egy Best", "ArabSeed Wine") + allMovieSeriesSites.filter { it !in listOf("TopCinema", "EgyDead TV10", "Egy Best", "ArabSeed Wine") }
+            isAnime -> listOf("witanime.you", "w1.anime4up.rest", "animeblkom.net") + allAnimeSites.filter { it !in listOf("witanime.you", "w1.anime4up.rest", "animeblkom.net") }
+            isMovie -> listOf("tv10.egydead.live", "a.qfilm.tv", "egybests.live") + allMovieSeriesSites.filter { it !in listOf("tv10.egydead.live", "a.qfilm.tv", "egybests.live") }
+            else -> listOf("topcinema.io", "stardima.com", "tv10.egydead.live") + allMovieSeriesSites.filter { it !in listOf("topcinema.io", "stardima.com", "tv10.egydead.live") }
         }
         
         val availableList = if (isAnime) allAnimeSites else allMovieSeriesSites
@@ -80,7 +87,8 @@ class PlayerViewModel : ViewModel() {
             fallbackWebsites = remainingFallbacks,
             currentServer = targetServer ?: "",
             availableServers = com.example.ui.screens.player.ServerStateStore.extractedServers,
-            availableServerLinks = com.example.ui.screens.player.ServerStateStore.extractedServerLinks
+            availableServerLinks = com.example.ui.screens.player.ServerStateStore.extractedServerLinks,
+            availableServerIds = com.example.ui.screens.player.ServerStateStore.extractedServerIds
         )
 
         if (!directUrl.isNullOrEmpty() && (directUrl.contains(".mp4") || directUrl.contains(".m3u8") || directUrl.startsWith("local_offline_file"))) {
@@ -126,28 +134,23 @@ class PlayerViewModel : ViewModel() {
     fun selectServer(server: String) {
         val link = _uiState.value.availableServerLinks[server]
         val id = _uiState.value.availableServerIds[server]
+        
+        var nextExtractionUrl = _uiState.value.extractionUrl
         if (link != null && link.isNotEmpty()) {
-            _uiState.value = _uiState.value.copy(
-                currentServer = server,
-                isLoading = true,
-                currentVideoUrl = null,
-                extractionUrl = link
-            )
+            nextExtractionUrl = link
+        }
+        
+        _uiState.value = _uiState.value.copy(
+            currentServer = server,
+            isLoading = true,
+            currentVideoUrl = null,
+            extractionUrl = nextExtractionUrl,
+            serverIdToChange = id
+        )
+        
+        if (nextExtractionUrl != null) {
             startExtractionTimeout()
-        } else if (id != null && id.isNotEmpty()) {
-            _uiState.value = _uiState.value.copy(
-                currentServer = server,
-                isLoading = true,
-                currentVideoUrl = null,
-                serverIdToChange = id
-            )
-            generateExtractionUrl()
         } else {
-            _uiState.value = _uiState.value.copy(
-                currentServer = server,
-                isLoading = true,
-                currentVideoUrl = null
-            )
             generateExtractionUrl()
         }
     }
@@ -163,22 +166,24 @@ class PlayerViewModel : ViewModel() {
         generateExtractionUrl()
     }
 
-    fun setExtractedUrl(url: String) {
+    fun setFinalVideoUrl(url: String) {
         extractionTimeoutJob?.cancel()
-        // If it's an iframe/embed URL, treat it as an intermediate extraction source
-        if (url.contains("iframe") || url.contains("embed") || url.contains("/player/") || url.contains("megamax.me")) {
-            _uiState.value = _uiState.value.copy(
-                extractionUrl = url,
-                isLoading = true,
-                currentVideoUrl = null
-            )
-            startExtractionTimeout()
-        } else if (_uiState.value.currentVideoUrl != url) {
+        if (_uiState.value.currentVideoUrl != url) {
             _uiState.value = _uiState.value.copy(
                 currentVideoUrl = url,
                 isLoading = false
             )
         }
+    }
+
+    fun setIframeUrl(url: String) {
+        extractionTimeoutJob?.cancel()
+        _uiState.value = _uiState.value.copy(
+            extractionUrl = url,
+            isLoading = true,
+            currentVideoUrl = null
+        )
+        startExtractionTimeout()
     }
 
     fun updateServers(servers: List<String>) {

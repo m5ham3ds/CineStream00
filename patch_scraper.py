@@ -1,23 +1,10 @@
-package com.example.data.repository
+import re
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import org.jsoup.Jsoup
-import java.net.URLEncoder
+with open('app/src/main/java/com/example/data/repository/ScraperRepository.kt', 'r') as f:
+    content = f.read()
 
-object ScraperRepository {
-
-    suspend fun getWatchUrl(website: String, query: String, isMovie: Boolean, season: Int, episode: Int): String? = withContext(Dispatchers.IO) {
-        val encodedQuery = URLEncoder.encode(query, "UTF-8")
-        
-        fun connect(url: String) = Jsoup.connect(url)
-            .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-            .header("Accept-Language", "ar,en-US;q=0.9,en;q=0.8")
-            .referrer("https://google.com/")
-            .timeout(10000)
-            
-        try {
-                        when (website) {
+# Replace the current when block conditions with exact site names
+new_when_block = """            when (website) {
                 "tv10.egydead.live" -> {
                     val doc = connect("https://tv10.egydead.live/page/1/?s=$encodedQuery").get()
                     val link = doc.select("section.main-section ul.posts-list li.movieItem a, div.pin-posts-list ul li.movieItem a").first()?.attr("href")
@@ -29,7 +16,7 @@ object ScraperRepository {
                     val episodesDoc = if (seasonLink != link) connect(seasonLink).get() else seriesDoc
                     val episodeLinks = episodesDoc.select("div.EpsList li a")
                     for (epLink in episodeLinks) {
-                        if (epLink.text().replace("\\D+".toRegex(), "") == episode.toString()) return@withContext epLink.attr("href")
+                        if (epLink.text().replace("\\\\D+".toRegex(), "") == episode.toString()) return@withContext epLink.attr("href")
                     }
                     return@withContext episodeLinks.first()?.attr("href")
                 }
@@ -75,7 +62,7 @@ object ScraperRepository {
                     val seriesDoc = connect(link).get()
                     val episodeLinks = seriesDoc.select("ul.episodes-list li a")
                     for (ep in episodeLinks) {
-                        if (ep.text().replace("\\D+".toRegex(), "") == episode.toString()) return@withContext ep.attr("href")
+                        if (ep.text().replace("\\\\D+".toRegex(), "") == episode.toString()) return@withContext ep.attr("href")
                     }
                     return@withContext episodeLinks.first()?.attr("href")
                 }
@@ -128,7 +115,7 @@ object ScraperRepository {
                     val seriesDoc = connect(link).get()
                     val episodeLinks = seriesDoc.select("ul.episodes-lists li a[href*='/episodes/']")
                     for (ep in episodeLinks) {
-                        val numText = (ep.selectFirst("h3")?.text() ?: ep.ownText()).replace("\\D+".toRegex(), "")
+                        val numText = (ep.selectFirst("h3")?.text() ?: ep.ownText()).replace("\\\\D+".toRegex(), "")
                         if (numText == episode.toString()) return@withContext ep.attr("href")
                     }
                     return@withContext episodeLinks.first()?.attr("href")
@@ -154,17 +141,23 @@ object ScraperRepository {
                     val seriesDoc = connect(link).get()
                     val episodeLinks = seriesDoc.select("ul.all-episodes-list li a, .episodes-list-content .episodes-card-title a, .episodes-links li a")
                     for (ep in episodeLinks) {
-                        if (ep.text().replace("\\D+".toRegex(), "") == episode.toString()) return@withContext ep.attr("href")
+                        if (ep.text().replace("\\\\D+".toRegex(), "") == episode.toString()) return@withContext ep.attr("href")
                     }
                     return@withContext episodeLinks.first()?.attr("href")
                 }
                 "topcinema.io", "laaroza.space", "z1.almeshkah.net" -> {
                     return@withContext "https://$website/search.php?keywords=$encodedQuery"
                 }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        return@withContext null
-    }
-}
+            }"""
+
+start_when = content.find("when (website) {")
+end_when = content.find("} catch (e: Exception) {", start_when)
+
+if start_when != -1 and end_when != -1:
+    # Adjust for closing brace of when
+    end_when = content.rfind("}", start_when, end_when) + 1
+    content = content[:start_when] + new_when_block + content[end_when:]
+
+with open('app/src/main/java/com/example/data/repository/ScraperRepository.kt', 'w') as f:
+    f.write(content)
+

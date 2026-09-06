@@ -213,8 +213,12 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
                     season = uiState.currentSeasonNumber,
                     episode = uiState.currentEpisodeNumber,
                     targetServer = uiState.currentServer ?: targetServer,
+                    targetServerId = uiState.serverIdToChange,
                     onVideoUrlFound = { extractedUrl ->
-                        viewModel.setExtractedUrl(extractedUrl)
+                        viewModel.setFinalVideoUrl(extractedUrl)
+                    },
+                    onIframeUrlFound = { iframeUrl ->
+                        viewModel.setIframeUrl(iframeUrl)
                     },
                     onServersFound = { servers ->
                         viewModel.updateServers(servers)

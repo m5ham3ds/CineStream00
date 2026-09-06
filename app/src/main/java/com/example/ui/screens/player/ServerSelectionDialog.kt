@@ -55,9 +55,9 @@ fun ServerSelectionDialog(
 ) {
     val coroutineScope = rememberCoroutineScope()
     
-    val priorityAnimeSites = listOf("witanime.cyou", "w1.anime4up.rest", "animeblkom.net", "animeat.net", "arabanime.net", "det.animerco.org", "vip.animeluxe.org", "stardima.com", "watch.stardima.com")
-    val priorityMovieSites = listOf("tv10.egydead.live", "a.qfilm.tv", "topcinema.io", "laaroza.space", "z1.almeshkah.net", "arabseed.wine", "arabseed-tv.com", "egybests.live", "e.cimalight.co", "uo.brstej.com")
-    val prioritySeriesSites = listOf("topcinema.io", "tv10.egydead.live", "egybests.live", "arabseed.wine", "z1.almeshkah.net", "laaroza.space", "a.qfilm.tv", "arabseed-tv.com", "e.cimalight.co", "uo.brstej.com")
+    val priorityAnimeSites = listOf("witanime.you", "w1.anime4up.rest", "animeblkom.net", "animeat.net", "arabanime.net", "det.animerco.org", "vip.animeluxe.org")
+    val priorityMovieSites = listOf("tv10.egydead.live", "a.qfilm.tv", "egybests.live", "arabseed.wine", "topcinema.io", "z1.almeshkah.net", "arabseed-tv.com", "e.cimalight.co", "stardima.com", "watch.stardima.com", "uo.brstej.com", "laaroza.space")
+    val prioritySeriesSites = listOf("topcinema.io", "stardima.com", "tv10.egydead.live", "a.qfilm.tv", "egybests.live", "arabseed.wine", "z1.almeshkah.net", "arabseed-tv.com", "e.cimalight.co", "watch.stardima.com", "uo.brstej.com", "laaroza.space")
 
     val prioritySites = if (isAnime) priorityAnimeSites else if (isMovie) priorityMovieSites else prioritySeriesSites
 
@@ -104,26 +104,26 @@ fun ServerSelectionDialog(
     }
 
     val encodedTitle = URLEncoder.encode(title, "UTF-8")
-    val searchUrl = when {
-        currentSiteName.contains("egydead") -> "https://$currentSiteName/?s=$encodedTitle"
-        currentSiteName.contains("qfilm") -> "https://$currentSiteName/search.php?keywords=$encodedTitle"
-        currentSiteName.contains("arabseed") -> "https://$currentSiteName/?s=$encodedTitle"
-        currentSiteName.contains("stardima") -> "https://$currentSiteName/search?query=$encodedTitle&page=1"
-        currentSiteName.contains("witanime") -> "https://$currentSiteName/?search_param=animes&s=$encodedTitle"
-        currentSiteName.contains("anime4up") -> "https://$currentSiteName/?search_param=animes&s=$encodedTitle"
-        currentSiteName.contains("cima4u") -> "https://$currentSiteName/search.php?keywords=$encodedTitle"
-        currentSiteName.contains("faselhd") -> "https://$currentSiteName/?s=$encodedTitle"
-        currentSiteName == "animeat.net" -> "https://animeat.net/?search=$encodedTitle"
-        currentSiteName == "det.animerco.org" -> "https://det.animerco.org/?s=$encodedTitle&page=1"
-        currentSiteName == "e.cimalight.co" -> "https://e.cimalight.co/search.php?keywords=$encodedTitle"
-        currentSiteName == "egybests.live" -> "https://egybests.live/?s=$encodedTitle&page=1"
-        currentSiteName == "uo.brstej.com" -> "https://uo.brstej.com/search.php?keywords=$encodedTitle"
-        currentSiteName == "vip.animeluxe.org" -> "https://vip.animeluxe.org/anime?s=$encodedTitle&page=1"
-        currentSiteName == "topcinema.io" -> "https://topcinema.io/?s=$encodedTitle"
-        currentSiteName == "laaroza.space" -> "https://laaroza.space/?s=$encodedTitle"
-        currentSiteName == "z1.almeshkah.net" -> "https://z1.almeshkah.net/search.php?keywords=$encodedTitle"
-        currentSiteName == "animeblkom.net" -> "https://animeblkom.net/search?query=$encodedTitle"
-        currentSiteName == "arabanime.net" -> "https://www.arabanime.net/?s=$encodedTitle"
+    val searchUrl = when (currentSiteName) {
+        "tv10.egydead.live" -> "https://tv10.egydead.live/page/1/?s=$encodedTitle"
+        "a.qfilm.tv" -> "https://a.qfilm.tv/search.php?keywords=$encodedTitle"
+        "egybests.live" -> "https://egybests.live/?s=$encodedTitle&page=1"
+        "arabseed.wine" -> "https://www.arabseed.wine/page/1/?s=$encodedTitle"
+        "topcinema.io" -> "https://topcinema.io/search.php?keywords=$encodedTitle"
+        "z1.almeshkah.net" -> "https://z1.almeshkah.net/search.php?keywords=$encodedTitle"
+        "arabseed-tv.com" -> "https://arabseed-tv.com/page/1/?s=$encodedTitle"
+        "e.cimalight.co" -> "https://e.cimalight.co/search.php?keywords=$encodedTitle"
+        "stardima.com" -> "https://www.stardima.com/search?query=$encodedTitle&page=1"
+        "watch.stardima.com" -> "https://watch.stardima.com/watch/search_gcse-2/?s=$encodedTitle&page=1"
+        "uo.brstej.com" -> "https://uo.brstej.com/search.php?keywords=$encodedTitle"
+        "laaroza.space" -> "https://laaroza.space/search.php?keywords=$encodedTitle"
+        "witanime.you" -> "https://witanime.you/?search_param=animes&s=$encodedTitle"
+        "w1.anime4up.rest" -> "https://w1.anime4up.rest/?search_param=animes&s=$encodedTitle"
+        "animeblkom.net" -> "https://animeblkom.net/search?query=$encodedTitle"
+        "animeat.net" -> "https://animeat.net/?search=$encodedTitle"
+        "arabanime.net" -> "https://www.arabanime.net/?s=$encodedTitle"
+        "det.animerco.org" -> "https://det.animerco.org/?s=$encodedTitle&page=1"
+        "vip.animeluxe.org" -> "https://vip.animeluxe.org/anime?s=$encodedTitle&page=1"
         else -> "https://$currentSiteName/?s=$encodedTitle"
     }
 
@@ -178,22 +178,26 @@ fun ServerSelectionDialog(
                                 val serversData = org.json.JSONArray(serversJson)
                                 val serversNames = mutableListOf<String>()
                                 val serversMap = mutableMapOf<String, String>()
+                                val serversIds = mutableMapOf<String, String>()
                                 
                                 for (i in 0 until serversData.length()) {
                                     val item = serversData.getJSONObject(i)
                                     val name = item.getString("name")
-                                    val link = item.getString("link")
+                                    val link = if (item.has("link")) item.getString("link") else ""
+                                    val id = if (item.has("id")) item.getString("id") else ""
                                     serversNames.add(name)
                                     serversMap[name] = link
+                                    serversIds[name] = id
                                 }
                                 
                                 if (serversNames.isNotEmpty() && extractedServers.isEmpty()) {
                                     Handler(Looper.getMainLooper()).post {
                                         finalWatchUrl = url
                                         extractedServers = serversNames
-                                        extractedServerLinks = serversMap // We will store this in a state
+                                        extractedServerLinks = serversMap
                                         com.example.ui.screens.player.ServerStateStore.extractedServers = serversNames
                                         com.example.ui.screens.player.ServerStateStore.extractedServerLinks = serversMap
+                                        com.example.ui.screens.player.ServerStateStore.extractedServerIds = serversIds
                                         isLoading = false
                                     }
                                 }
@@ -228,193 +232,7 @@ fun ServerSelectionDialog(
                             super.onPageFinished(view, url)
                             
                             val isMovieStr = if (isMovie) "true" else "false"
-                            val autoPlayScript = """
-                                (function() {
-                                    var isMovie = $isMovieStr;
-                                    var season = $season;
-                                    var epNum = $episode;
-                                    var loc = window.location.href.toLowerCase();
-                                    
-                                    var intervalId = setInterval(function() {
-                                        // Bypass Cloudflare
-                                        var cf = document.querySelector('.cf-turnstile-wrapper, #challenge-stage, input[type="checkbox"], #challenge-form, .mark-as-human');
-                                        var isJustAMoment = document.title.includes('Just a moment') || document.title.includes('Cloudflare') || document.title.includes('Attention Required');
-                                        var isCloudflare = cf || isJustAMoment;
-                                        
-                                        if (isCloudflare) {
-                                            if (typeof AndroidBridge !== 'undefined') AndroidBridge.sendBypassStatus("CLOUDFLARE");
-                                            if (cf) cf.click();
-                                            return;
-                                        } else {
-                                            if (typeof AndroidBridge !== 'undefined') AndroidBridge.sendBypassStatus("NORMAL");
-                                        }
-
-                                        // 1. Search Results -> Click item
-                                        if (loc.includes('?s=') || loc.includes('search') || loc.includes('query=')) {
-                                            var results = document.querySelectorAll('a.postBlock, section.main-section ul.posts-list li.movieItem a, .movieItem a, .postBlock a,  ul.pm-ul-browse-videos li a, ul.movie__blocks__ul li a.movie__block, ul.series__ul li a, div.media-block a.image, div.owl-animes a.overlay, div.embla__slide a, .movie-card a, .anime-card a, .item-list a, article a, .post a, .thumb a, .Blocks-Area a.Block-Item, .ep-card a, .episode-card a, .box-item a, .hover-content a, .anime-list-content a, .half-post a, .Block-Item, a.header-featured-item, a.movie-item__link, .pm-video-thumb a, .lucodeia-slider-slide-item, a.overlay, a.absolute.inset-0');
-                                            if (results && results.length > 0) {
-                                                clearInterval(intervalId);
-                                                var targetResult = results[0];
-                                                if (!isMovie) {
-                                                    var e = epNum.toString();
-                                                    for (var i=0; i<results.length; i++) {
-                                                        var txt = decodeURIComponent(results[i].href || "").toLowerCase() + " " + (results[i].innerText || results[i].title || results[i].getAttribute('title') || "").toLowerCase();
-                                                        if (txt.includes('حلقة ' + e) || txt.includes('حلقه ' + e) || txt.includes('-' + e + '-') || txt.includes('ep ' + e) || txt.includes('episode ' + e) || txt.includes(' ' + e + ' ')) {
-                                                            targetResult = results[i];
-                                                            break;
-                                                        }
-                                                    }
-                                                }
-                                                window.location.href = targetResult.href;
-                                                return;
-                                            }
-                                        }
-                                        
-                                        // 2. Series Page -> Click Season/Episode
-                                        var iframes = document.querySelectorAll('iframe');
-                                        var hasIframe = false;
-                                        for(var i=0; i<iframes.length; i++) {
-                                            if(iframes[i].src && !iframes[i].src.includes('cloudflare') && !iframes[i].src.includes('facebook') && !iframes[i].src.includes('twitter')) {
-                                                hasIframe = true; break;
-                                            }
-                                        }
-                                        var videoTags = document.querySelectorAll('video');
-                                        var hasVideo = videoTags.length > 0;
-                                        
-                                        var serverItems = [];
-                                        
-                                        // (A) Standard data-link, data-watch, data-src servers
-                                        var linkElements = document.querySelectorAll('[data-link], [data-watch], [data-src], ul#episode-servers li a.server-link');
-                                        for(var i=0; i<linkElements.length; i++) {
-                                            var el = linkElements[i];
-                                            var link = el.getAttribute('data-link') || el.getAttribute('data-watch') || el.getAttribute('data-src');
-                                            if(!link && el.hasAttribute('onclick')) {
-                                                // Try to extract from onclick="loadIframe(this, 'url')"
-                                                var onclickStr = el.getAttribute('onclick');
-                                                var m = onclickStr.match(/loadIframe\(this,\s*'([^']+)'\)/);
-                                                if(m) link = m[1];
-                                            }
-                                            if(!link && el.href && el.href.includes('http') && !el.href.includes(window.location.host)) {
-                                                link = el.href;
-                                            }
-                                            var name = el.innerText.trim() || el.getAttribute('title') || 'سيرفر ' + (i+1);
-                                            if (link && link.startsWith('http') && !link.includes('facebook') && !link.includes('twitter')) {
-                                                serverItems.push({ name: name, link: link });
-                                            }
-                                        }
-                                        
-                                        // (B) qfilm (Array of iframes in 'servers' variable)
-                                        if (typeof servers !== 'undefined' && Array.isArray(servers)) {
-                                            var btnNames = document.querySelectorAll('button.server-btn');
-                                            for(var i=0; i<servers.length; i++) {
-                                                var html = servers[i];
-                                                var srcMatch = html.match(/src=["']([^"']+)["']/);
-                                                if (srcMatch) {
-                                                    var name = btnNames[i] ? btnNames[i].innerText.trim() : 'سيرفر ' + (i+1);
-                                                    serverItems.push({ name: name, link: srcMatch[1] });
-                                                }
-                                            }
-                                        }
-                                        
-                                        // (C) topcinema & arabseed (data-server IDs)
-                                        var serverList = document.querySelectorAll('ul.WatchServers li.server--item, ul.servers__list li, .servers-list li, .serversList li, ul.servers li, .mob-servers ul li');
-                                        for(var i=0; i<serverList.length; i++) {
-                                            var el = serverList[i];
-                                            var serverId = el.getAttribute('data-server');
-                                            var link = el.getAttribute('data-link');
-                                            var name = el.querySelector('span') ? el.querySelector('span').innerText : el.innerText.trim();
-                                            if (!name) name = 'سيرفر ' + (i+1);
-                                            
-                                            // If we already added this via data-link, skip
-                                            var alreadyAdded = false;
-                                            for(var j=0; j<serverItems.length; j++){ if(serverItems[j].name === name) alreadyAdded=true; }
-                                            
-                                            if (!alreadyAdded) {
-                                                if (link && link.startsWith('http')) {
-                                                    serverItems.push({ name: name, link: link });
-                                                } else if (serverId !== null) {
-                                                    serverItems.push({ name: name, link: window.location.href, id: serverId });
-                                                } else {
-                                                    serverItems.push({ name: name, link: window.location.href });
-                                                }
-                                            }
-                                        }
-                                        
-                                        var watchNowBtn = document.querySelector('.watchNow button, .watchNow form button, .watch-btn, #watch-btn');
-                                        if (watchNowBtn && serverItems.length === 0 && !hasIframe && !hasVideo) {
-                                            watchNowBtn.click();
-                                            return;
-                                        }
-                                        
-                                        if (!isMovie && serverItems.length === 0 && !hasIframe && !hasVideo) {
-                                            var epLinks = document.querySelectorAll('.episodes__list li a, .EpsList li a, .episodes-list li a, .all-episodes-list li a, .SeasonsEpisodes a, .episodelist a, .episodes a, .ListEp a, ul.episodes li a, .ep-card a, .episode-card a, .List-Episodes a, .list-episodes a, .EpisodesList a, .eplist a, .episode-list a');
-                                            if (epLinks.length > 0) {
-                                                clearInterval(intervalId);
-                                                var targetEp = null;
-                                                for(var i=0; i<epLinks.length; i++) {
-                                                    var text = epLinks[i].innerText || "";
-                                                    if(text.trim() === epNum.toString() || text.includes(" " + epNum.toString() + " ") || text.includes("حلقة " + epNum) || text.includes("الحلقة " + epNum)) {
-                                                        targetEp = epLinks[i];
-                                                        break;
-                                                    }
-                                                }
-                                                if(targetEp) {
-                                                    window.location.href = targetEp.href;
-                                                } else {
-                                                    for(var i=0; i<epLinks.length; i++) {
-                                                        if((epLinks[i].innerText || "").includes(epNum.toString())) {
-                                                            targetEp = epLinks[i]; break;
-                                                        }
-                                                    }
-                                                    window.location.href = targetEp ? targetEp.href : epLinks[0].href;
-                                                }
-                                                return;
-                                            }
-                                        }
-                                        
-                                        // 3. Extract Servers on Watch Page
-                                        if (serverItems.length > 0) {
-                                            clearInterval(intervalId);
-                                            if (typeof AndroidBridge !== 'undefined') {
-                                                // Clean up names
-                                                var finalItems = [];
-                                                for(var i=0; i<serverItems.length; i++){
-                                                    var sName = serverItems[i].name.trim();
-                                                    if (sName === "") {
-                                                        sName = "سيرفر " + (i+1);
-                                                    }
-                                                    serverItems[i].name = sName;
-                                                    
-                                                    // Ensure unique names
-                                                    var exists = false;
-                                                    for(var j=0; j<finalItems.length; j++){ if(finalItems[j].name === sName) exists = true; }
-                                                    if(!exists) finalItems.push(serverItems[i]);
-                                                }
-                                                AndroidBridge.sendServersV2(JSON.stringify(finalItems), window.location.href);
-                                            }
-                                            return;
-                                        }
-                                        
-                                        if (serverItems.length === 0 && (hasIframe || hasVideo)) {
-                                            clearInterval(intervalId);
-                                            if (typeof AndroidBridge !== 'undefined') {
-                                                var finalItems = [{ name: "السيرفر الرئيسي", link: window.location.href }];
-                                                AndroidBridge.sendServersV2(JSON.stringify(finalItems), window.location.href);
-                                            }
-                                            return;
-                                        }
-                                        
-                                        // 4. Fast Fail
-                                        if (!isCloudflare && document.readyState === 'complete') {
-                                            window._failCount = (window._failCount || 0) + 1;
-                                            if (window._failCount >= 6) {
-                                                clearInterval(intervalId);
-                                                if (typeof AndroidBridge !== 'undefined') AndroidBridge.sendFailed();
-                                            }
-                                        }
-                                    }, 1500);
-                                })();
-                            """.trimIndent()
+                            val autoPlayScript = com.example.ui.screens.player.SiteScripts.getScriptForSite(currentSiteName, isMovie, episode)
                             view.evaluateJavascript(autoPlayScript, null)
                         }
                     }

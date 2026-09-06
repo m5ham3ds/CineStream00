@@ -3,21 +3,20 @@ import re
 with open('app/src/main/java/com/example/ui/screens/player/PlayerScreen.kt', 'r') as f:
     content = f.read()
 
-content = content.replace(
-    'fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? = null, onBack: () -> Unit, viewModel: PlayerViewModel = viewModel()) {',
-    'fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? = null, targetServer: String? = null, website: String? = null, onBack: () -> Unit, viewModel: PlayerViewModel = viewModel()) {'
-)
+old_code = """                    onVideoUrlFound = { extractedUrl ->
+                        viewModel.setExtractedUrl(extractedUrl)
+                    },
+                    onServersFound = { servers ->"""
 
-content = content.replace(
-    'viewModel.initialize(mediaId, isMovie, title, url)',
-    'viewModel.initialize(mediaId, isMovie, title, url, targetServer, website)'
-)
+new_code = """                    onVideoUrlFound = { extractedUrl ->
+                        viewModel.setFinalVideoUrl(extractedUrl)
+                    },
+                    onIframeUrlFound = { iframeUrl ->
+                        viewModel.setIframeUrl(iframeUrl)
+                    },
+                    onServersFound = { servers ->"""
 
-# And make sure HiddenVideoExtractor uses the right state
-content = content.replace(
-    'targetServer = uiState.currentServer,',
-    'targetServer = uiState.currentServer ?: targetServer,'
-)
+content = content.replace(old_code, new_code)
 
 with open('app/src/main/java/com/example/ui/screens/player/PlayerScreen.kt', 'w') as f:
     f.write(content)
