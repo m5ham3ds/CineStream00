@@ -200,6 +200,7 @@ fun AnimeScreen(
                     rank = index + 1,
                     rating = 8.7 - (index * 0.1),
                     year = "2024",
+                    isMovie = false,
                     mediaId = series.id,
                             onClick = { onAnimeClick(series.id) },
                     onLongClick = { 
@@ -227,6 +228,7 @@ fun AnimeScreen(
                     rank = null, // No rank for new releases
                     rating = 8.5,
                     year = "2024",
+                    isMovie = false,
                     mediaId = series.id,
                             onClick = { onAnimeClick(series.id) },
                     onLongClick = { 

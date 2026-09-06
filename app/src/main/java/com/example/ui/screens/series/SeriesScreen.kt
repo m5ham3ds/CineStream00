@@ -118,13 +118,6 @@ fun SeriesScreen(
             .verticalScroll(scrollState)
             
     ) {
-        Text(
-            text = "Series",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-        )
 
         // Hero Section
         HeroCarousel(items = uiState.series.take(5).map { HeroItem(it.id, it.title, it.backdropUrl, false) }, onClick = onSeriesClick)
