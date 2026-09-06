@@ -78,6 +78,7 @@ fun ServerSelectionDialog(
     var selectedServerUrlToExtract by remember { mutableStateOf<String?>(null) }
     var isExtractingQualities by remember { mutableStateOf(false) }
     var availableQualities by remember { mutableStateOf<List<com.example.utils.M3U8Parser.QualityInfo>>(emptyList()) }
+    var showCancelConfirmDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(currentSiteIndex) {
         if (currentSiteIndex >= prioritySites.size) {
@@ -472,7 +473,12 @@ Dialog(
                     Text(
                         text = "جاري استخراج الجودات المتاحة...",
                         color = Color.White,
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 } else if (availableQualities.isNotEmpty()) {
                     Text(
@@ -568,6 +574,38 @@ Dialog(
                     }
                 }
             }
+        }
+        
+        if (showCancelConfirmDialog) {
+            AlertDialog(
+                onDismissRequest = { showCancelConfirmDialog = false },
+                containerColor = Color(0xFF222225),
+                titleContentColor = Color.White,
+                textContentColor = Color.LightGray,
+                title = {
+                    Text(text = "إلغاء العملية", fontWeight = FontWeight.Bold)
+                },
+                text = {
+                    Text(text = "العملية لا تزال جارية، هل أنت متأكد أنك تريد الإلغاء؟")
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showCancelConfirmDialog = false
+                            onDismiss()
+                        }
+                    ) {
+                        Text("نعم، إلغاء", color = Color(0xFFFF1111))
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { showCancelConfirmDialog = false }
+                    ) {
+                        Text("متابعة", color = Color.White)
+                    }
+                }
+            )
         }
     }
 }
