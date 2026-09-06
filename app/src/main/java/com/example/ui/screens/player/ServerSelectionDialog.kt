@@ -1,5 +1,5 @@
 package com.example.ui.screens.player
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
 
 import android.annotation.SuppressLint
 import android.os.Handler
@@ -295,10 +295,27 @@ Dialog(
                 // Header
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (availableQualities.isNotEmpty() || isExtractingQualities) {
+                        IconButton(
+                            onClick = { 
+                                isExtractingQualities = false
+                                availableQualities = emptyList()
+                                selectedServerToExtract = null
+                            },
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(Color(0xFF222225), CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = androidx.compose.material.icons.Icons.Default.ArrowBack,
+                                contentDescription = "Back",
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    } else {
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
@@ -312,31 +329,37 @@ Dialog(
                                 modifier = Modifier.size(24.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = "اختر السيرفر",
-                                color = Color.White,
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 1,
-                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                            )
-                            Text(
-                                text = "جاري الإتصال بالسيرفرات المتاحة...",
-                                color = Color.Gray,
-                                style = MaterialTheme.typography.bodySmall,
-                                maxLines = 1,
-                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                            )
-                        }
                     }
-
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "اختر السيرفر",
+                            color = Color.White,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = "جاري الإتصال بالسيرفرات المتاحة...",
+                            color = Color.Gray,
+                            style = MaterialTheme.typography.bodySmall,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
                     IconButton(
-                        onClick = onDismiss,
+                        onClick = {
+                            if (isLoading || isExtractingQualities) {
+                                showCancelConfirmDialog = true
+                            } else {
+                                onDismiss()
+                            }
+                        },
                         modifier = Modifier
                             .size(36.dp)
                             .background(Color(0xFF222225), CircleShape)
@@ -420,7 +443,7 @@ Dialog(
                     // Badges Row
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         StatusBadge(
@@ -614,16 +637,16 @@ Dialog(
 fun StatusBadge(text: String, icon: androidx.compose.ui.graphics.vector.ImageVector, statusColor: Color) {
     Row(
         modifier = Modifier
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(14.dp))
             .background(Color(0xFF19191C))
-            .border(1.dp, Color(0xFF2C2C2E), RoundedCornerShape(16.dp))
-            .padding(horizontal = 10.dp, vertical = 8.dp),
+            .border(1.dp, Color(0xFF2C2C2E), RoundedCornerShape(14.dp))
+            .padding(horizontal = 6.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(icon, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(16.dp))
-        Spacer(modifier = Modifier.width(6.dp))
-        Text(text, color = Color.LightGray, fontSize = 11.sp)
-        Spacer(modifier = Modifier.width(6.dp))
+        Icon(icon, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(14.dp))
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(text, color = Color.LightGray, fontSize = 10.sp, maxLines = 1)
+        Spacer(modifier = Modifier.width(4.dp))
         Box(modifier = Modifier.size(6.dp).background(statusColor, CircleShape))
     }
 }
