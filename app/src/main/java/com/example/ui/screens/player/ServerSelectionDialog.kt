@@ -192,6 +192,8 @@ fun ServerSelectionDialog(
                                         finalWatchUrl = url
                                         extractedServers = serversNames
                                         extractedServerLinks = serversMap // We will store this in a state
+                                        com.example.ui.screens.player.ServerStateStore.extractedServers = serversNames
+                                        com.example.ui.screens.player.ServerStateStore.extractedServerLinks = serversMap
                                         isLoading = false
                                     }
                                 }
@@ -205,6 +207,10 @@ fun ServerSelectionDialog(
                                 Handler(Looper.getMainLooper()).post {
                                     finalWatchUrl = url
                                     extractedServers = servers
+                                    val tempMap = servers.associateWith { "" }
+                                    com.example.ui.screens.player.ServerStateStore.extractedServers = servers
+                                    com.example.ui.screens.player.ServerStateStore.extractedServerLinks = tempMap
+                                    extractedServerLinks = tempMap
                                     isLoading = false
                                     
                                     
@@ -373,8 +379,8 @@ fun ServerSelectionDialog(
                                                 // Clean up names
                                                 var finalItems = [];
                                                 for(var i=0; i<serverItems.length; i++){
-                                                    var sName = serverItems[i].name.replace(/1080p|720p|480p|360p|240p|1080|720|480|360|240/gi, '').trim();
-                                                    if (sName === "" || sName.includes('جودة') || sName.includes('FHD') || sName.includes('HD') || sName.includes('SD')) {
+                                                    var sName = serverItems[i].name.trim();
+                                                    if (sName === "") {
                                                         sName = "سيرفر " + (i+1);
                                                     }
                                                     serverItems[i].name = sName;

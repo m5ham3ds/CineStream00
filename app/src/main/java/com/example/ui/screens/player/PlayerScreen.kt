@@ -114,19 +114,28 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
     
     LaunchedEffect(currentQuality) {
         val parametersBuilder = trackSelector.buildUponParameters()
-        when (currentQuality) {
-            "360p" -> parametersBuilder.setMaxVideoSize(Int.MAX_VALUE, 360)
-            "480p" -> parametersBuilder.setMaxVideoSize(Int.MAX_VALUE, 480)
-            "720p" -> parametersBuilder.setMaxVideoSize(Int.MAX_VALUE, 720)
-            "1080p" -> parametersBuilder.setMaxVideoSize(Int.MAX_VALUE, 1080)
-            "4K" -> parametersBuilder.setMaxVideoSize(Int.MAX_VALUE, 2160)
-            "Auto" -> parametersBuilder.clearVideoSizeConstraints()
-            else -> parametersBuilder.clearVideoSizeConstraints()
+        if (currentQuality == "Auto") {
+            parametersBuilder.clearVideoSizeConstraints()
+        } else {
+            val height = currentQuality.replace("p", "").toIntOrNull()
+            if (height != null) {
+                // To force a specific quality, we set max and min to the same height,
+                // or just max and clear others, but ExoPlayer usually respects max size constraints well.
+                // We will set both max and min video size to force this exact resolution if available.
+                parametersBuilder.setMaxVideoSize(Int.MAX_VALUE, height)
+                parametersBuilder.setMinVideoSize(0, height)
+            } else {
+                parametersBuilder.clearVideoSizeConstraints()
+            }
         }
         trackSelector.setParameters(parametersBuilder)
     }
 
     var showInitialSelection by remember { mutableStateOf(false) }
+
+    // State to hold actual available qualities from ExoPlayer
+    var availableVideoQualities by remember { mutableStateOf<List<String>>(listOf("Auto")) }
+
 
     LaunchedEffect(uiState.currentVideoUrl) {
         uiState.currentVideoUrl?.let { url ->
@@ -454,8 +463,7 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
             Column(modifier = Modifier.padding(16.dp)) {
                 Text("Select Quality", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(16.dp))
-                val qualities = listOf("Auto", "4K", "1080p", "720p", "480p", "360p")
-                qualities.forEach { q ->
+                availableVideoQualities.forEach { q ->
                     TextButton(
                         onClick = { 
                             currentQuality = q
@@ -552,6 +560,7 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
 
     if (showDownloadSheet) {
         DownloadQualitySheet(
+            qualities = availableVideoQualities.filter { it != "Auto" }.ifEmpty { listOf("Default") },
             onDismiss = { showDownloadSheet = false },
             onQualitySelected = { quality ->
                 uiState.currentVideoUrl?.let { videoUrl ->
@@ -592,7 +601,7 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
                         
                         Text("Quality:", color = Color.Gray, fontSize = 14.sp)
                         androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            items(listOf("Auto", "1080p", "720p", "480p")) { q ->
+                            items(availableVideoQualities) { q ->
                                 androidx.compose.material3.FilterChip(
                                     selected = (currentQuality == q),
                                     onClick = { currentQuality = q },

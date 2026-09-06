@@ -25,6 +25,9 @@ data class PlayerUiState(
     // Server
     val availableServers: List<String> = emptyList(),
     val currentServer: String = "",
+    val availableServerLinks: Map<String, String> = emptyMap(),
+    val availableServerIds: Map<String, String> = emptyMap(),
+    val serverIdToChange: String? = null,
 
     // Quality
     val availableQualities: List<String> = listOf("Auto", "1080p", "720p"),
@@ -75,7 +78,9 @@ class PlayerViewModel : ViewModel() {
             availableWebsites = availableList,
             currentWebsite = bestWebsite,
             fallbackWebsites = remainingFallbacks,
-            currentServer = targetServer ?: ""
+            currentServer = targetServer ?: "",
+            availableServers = com.example.ui.screens.player.ServerStateStore.extractedServers,
+            availableServerLinks = com.example.ui.screens.player.ServerStateStore.extractedServerLinks
         )
 
         if (!directUrl.isNullOrEmpty() && (directUrl.contains(".mp4") || directUrl.contains(".m3u8") || directUrl.startsWith("local_offline_file"))) {
@@ -119,8 +124,32 @@ class PlayerViewModel : ViewModel() {
     }
 
     fun selectServer(server: String) {
-        _uiState.value = _uiState.value.copy(currentServer = server, isLoading = true, currentVideoUrl = null)
-        generateExtractionUrl() // In a real app, this might change the iframe URL params
+        val link = _uiState.value.availableServerLinks[server]
+        val id = _uiState.value.availableServerIds[server]
+        if (link != null && link.isNotEmpty()) {
+            _uiState.value = _uiState.value.copy(
+                currentServer = server,
+                isLoading = true,
+                currentVideoUrl = null,
+                extractionUrl = link
+            )
+            startExtractionTimeout()
+        } else if (id != null && id.isNotEmpty()) {
+            _uiState.value = _uiState.value.copy(
+                currentServer = server,
+                isLoading = true,
+                currentVideoUrl = null,
+                serverIdToChange = id
+            )
+            generateExtractionUrl()
+        } else {
+            _uiState.value = _uiState.value.copy(
+                currentServer = server,
+                isLoading = true,
+                currentVideoUrl = null
+            )
+            generateExtractionUrl()
+        }
     }
 
     fun selectEpisode(episode: Episode) {

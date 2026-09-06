@@ -12,14 +12,11 @@ import androidx.compose.ui.unit.sp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DownloadQualitySheet(
+    qualities: List<String> = listOf("1080p", "720p", "480p"),
     onDismiss: () -> Unit,
     onQualitySelected: (String) -> Unit
 ) {
-    val qualities = listOf(
-        "1080p (FHD)", 
-        "720p (HD)", 
-        "480p (SD)"
-    )
+
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(

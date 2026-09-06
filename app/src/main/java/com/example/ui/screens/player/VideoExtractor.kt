@@ -142,8 +142,8 @@ fun HiddenVideoExtractor(
                                     if (targetServer !== "" && targetServer !== "السيرفر الرئيسي") {
                                         // Attempt to find and click the specific target server
                                         for(var i=0; i<serverList.length; i++) {
-                                            var sName = serverList[i].innerText.trim().replace(/1080p|720p|480p|360p|240p|1080|720|480|360|240/gi, '').trim();
-                                            if (sName === "" || sName.includes('جودة') || sName.includes('FHD') || sName.includes('HD') || sName.includes('SD')) {
+                                            var sName = serverList[i].innerText.trim();
+                                            if (sName === "") {
                                                 sName = "سيرفر " + (i+1);
                                             }
                                             if(sName === targetServer || serverList[i].innerText.trim() === targetServer || serverList[i].getAttribute('data-server') === targetServer) {
