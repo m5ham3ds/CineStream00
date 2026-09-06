@@ -107,6 +107,7 @@ object SiteScripts {
                 }
                 else if ("$siteName" === "a.qfilm.tv") {
                     var serverArray = window.servers;
+                    if (!serverArray && typeof servers !== 'undefined') serverArray = servers;
                     if (serverArray && Array.isArray(serverArray)) {
                         var buttons = document.querySelectorAll('.server-btn');
                         var names = [];
@@ -217,7 +218,7 @@ if (!name) name = 'سيرفر ' + (i+1);
                         if(link) serverItems.push({ name: name, link: link });
                     });
                 }
-                else if ("$siteName" === "tv10.egydead.live" || "$siteName" === "arabseed-tv.com") {
+                else if ("$siteName" === "tv10.egydead.live") {
                     // Fallback using data-link or data-server
                     var items = document.querySelectorAll('ul.WatchServers li.server--item, ul.servers__list li, .servers-list li, .serversList li, ul.servers li, .mob-servers ul li');
                     items.forEach(function(el, i) {
@@ -259,7 +260,7 @@ if (!name) name = 'سيرفر ' + (i+1);
                     }
                     
                     if (!${isMovie}) {
-                        var epLinks = document.querySelectorAll('.episodes__list li a, .EpsList li a, .episodes-list li a, .all-episodes-list li a, .SeasonsEpisodes a, .episodelist a, .episodes a, .ListEp a, ul.episodes li a, .ep-card a, .episode-card a, .List-Episodes a, .list-episodes a, .EpisodesList a, .eplist a, .episode-list a, ul#episodes-list-container li.episode-list-item a, .tabcontent ul a');
+                        var epLinks = document.querySelectorAll('.episodes__list li a, .EpsList li a, .episodes-list li a, .all-episodes-list li a, .SeasonsEpisodes a, .episodelist a, .episodes a, .ListEp a, ul.episodes li a, .ep-card a, .episode-card a, .List-Episodes a, .list-episodes a, .EpisodesList a, .eplist a, .episode-list a, ul#episodes-list-container li.episode-list-item a, .tabcontent ul a, div.anime-grid#episodesList a, .episodes-list-content a, ul.episodes-lists a, ul.episodes-links a, div.epnum a, div.hover a');
                         if (epLinks.length > 0) {
                             var targetEp = null;
                             var e = '${episode}';
@@ -272,6 +273,14 @@ if (!name) name = 'سيرفر ' + (i+1);
                             }
                             if(targetEp) {
                                 clearInterval(intervalId);
+                                var onclickAttr = targetEp.getAttribute('onclick');
+                                if (onclickAttr && onclickAttr.includes('openEpisode(')) {
+                                    var match = onclickAttr.match(/openEpisode\('([^']+)'\)/);
+                                    if (match) {
+                                        window.location.href = atob(match[1]);
+                                        return;
+                                    }
+                                }
                                 window.location.href = targetEp.href;
                                 return;
                             }

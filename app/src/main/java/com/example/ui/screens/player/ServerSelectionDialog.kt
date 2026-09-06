@@ -73,11 +73,6 @@ fun ServerSelectionDialog(
     var finalWatchUrl by remember { mutableStateOf<String?>(null) }
     var isFailed by remember { mutableStateOf(false) }
     var bypassStatus by remember { mutableStateOf("CHECKING_CLOUDFLARE") }
-
-    var selectedServerToExtract by remember { mutableStateOf<String?>(null) }
-    var selectedServerUrlToExtract by remember { mutableStateOf<String?>(null) }
-    var isExtractingQualities by remember { mutableStateOf(false) }
-    var availableQualities by remember { mutableStateOf<List<com.example.utils.M3U8Parser.QualityInfo>>(emptyList()) }
     var showCancelConfirmDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(currentSiteIndex) {
@@ -256,8 +251,18 @@ fun ServerSelectionDialog(
     }
 
 Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+        onDismissRequest = {
+            if (isLoading) {
+                showCancelConfirmDialog = true
+            } else {
+                onDismiss()
+            }
+        },
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            dismissOnClickOutside = false,
+            dismissOnBackPress = true
+        )
     ) {
         val isVerified = bypassStatus == "VERIFIED"
         val isNormal = bypassStatus == "NORMAL"
@@ -272,6 +277,11 @@ Dialog(
                 .clip(RoundedCornerShape(24.dp))
                 .background(Color(0xFF16161A))
                 .border(1.dp, Color(0x33FF1111), RoundedCornerShape(24.dp))
+                .clickable(
+                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                    indication = null,
+                    onClick = {} // Consume clicks inside the dialog so they don't dismiss
+                )
         ) {
             // Subtle top-left / top-right radial gradient for the red glow
             Box(
@@ -297,38 +307,18 @@ Dialog(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (availableQualities.isNotEmpty() || isExtractingQualities) {
-                        IconButton(
-                            onClick = { 
-                                isExtractingQualities = false
-                                availableQualities = emptyList()
-                                selectedServerToExtract = null
-                            },
-                            modifier = Modifier
-                                .size(48.dp)
-                                .background(Color(0xFF222225), CircleShape)
-                        ) {
-                            Icon(
-                                imageVector = androidx.compose.material.icons.Icons.Default.ArrowBack,
-                                contentDescription = "Back",
-                                tint = Color.White,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .background(Color(0xFF330000), CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = androidx.compose.material.icons.Icons.Outlined.CloudDownload,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .background(Color(0xFF330000), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = androidx.compose.material.icons.Icons.Outlined.CloudDownload,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Column(
@@ -354,7 +344,7 @@ Dialog(
                     Spacer(modifier = Modifier.width(16.dp))
                     IconButton(
                         onClick = {
-                            if (isLoading || isExtractingQualities) {
+                            if (isLoading) {
                                 showCancelConfirmDialog = true
                             } else {
                                 onDismiss()
@@ -489,68 +479,6 @@ Dialog(
                         style = MaterialTheme.typography.bodyLarge,
                         textAlign = TextAlign.Center
                     )
-                } else if (isExtractingQualities) {
-                    Spacer(modifier = Modifier.height(24.dp))
-                    CircularProgressIndicator(color = activeColor, modifier = Modifier.size(48.dp))
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "جاري استخراج الجودات المتاحة...",
-                        color = Color.White,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center,
-                        maxLines = 1,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                } else if (availableQualities.isNotEmpty()) {
-                    Text(
-                        text = "اختر الجودة المناسبة:",
-                        color = Color(0xFF00C853),
-                        style = MaterialTheme.typography.labelLarge,
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
-                    
-                    LazyColumn(
-                        modifier = Modifier.fillMaxWidth().heightIn(max = 300.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(availableQualities) { quality ->
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        onPlay(quality.url, "${selectedServerToExtract} - ${quality.name}", currentSiteName)
-                                    },
-                                colors = CardDefaults.cardColors(
-                                    containerColor = Color(0xFF222225)
-                                ),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center
-                                ) {
-                                    Icon(
-                                        imageVector = androidx.compose.material.icons.Icons.Outlined.Storage,
-                                        contentDescription = null,
-                                        tint = Color.White,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = quality.name,
-                                        color = Color.White,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
-                        }
-                    }
                 } else if (extractedServers.isNotEmpty()) {
                     Text(
                         text = "تم جلب السيرفرات من: $currentSiteName",
@@ -568,10 +496,8 @@ Dialog(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        selectedServerToExtract = server
-                                        selectedServerUrlToExtract = extractedServerLinks[server] ?: finalWatchUrl ?: searchUrl
-                                        availableQualities = emptyList()
-                                        isExtractingQualities = true
+                                        val urlToPlay = extractedServerLinks[server] ?: finalWatchUrl ?: searchUrl
+                                        onPlay(urlToPlay, server, currentSiteName)
                                     },
                                 colors = CardDefaults.cardColors(
                                     containerColor = Color(0xFF222225)
@@ -634,19 +560,20 @@ Dialog(
 }
 
 @Composable
-fun StatusBadge(text: String, icon: androidx.compose.ui.graphics.vector.ImageVector, statusColor: Color) {
+fun StatusBadge(text: String, icon: androidx.compose.ui.graphics.vector.ImageVector, statusColor: Color, modifier: Modifier = Modifier) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .clip(RoundedCornerShape(14.dp))
             .background(Color(0xFF19191C))
             .border(1.dp, Color(0xFF2C2C2E), RoundedCornerShape(14.dp))
-            .padding(horizontal = 6.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 4.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
     ) {
-        Icon(icon, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(14.dp))
-        Spacer(modifier = Modifier.width(4.dp))
-        Text(text, color = Color.LightGray, fontSize = 10.sp, maxLines = 1)
-        Spacer(modifier = Modifier.width(4.dp))
+        Icon(icon, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(12.dp))
+        Spacer(modifier = Modifier.width(2.dp))
+        Text(text, color = Color.LightGray, fontSize = 9.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+        Spacer(modifier = Modifier.width(2.dp))
         Box(modifier = Modifier.size(6.dp).background(statusColor, CircleShape))
     }
 }
