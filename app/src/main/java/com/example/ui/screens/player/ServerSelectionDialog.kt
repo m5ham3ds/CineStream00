@@ -58,7 +58,7 @@ fun ServerSelectionDialog(
     
     val priorityAnimeSites = listOf("witanime.you", "w1.anime4up.rest", "animeblkom.net", "animeat.net", "arabanime.net", "det.animerco.org", "vip.animeluxe.org")
     val priorityMovieSites = listOf("tv10.egydead.live", "a.qfilm.tv", "egybests.live", "arabseed.wine", "topcinema.io", "z1.almeshkah.net", "arabseed-tv.com", "e.cimalight.co", "stardima.com", "watch.stardima.com", "uo.brstej.com", "laaroza.space")
-    val prioritySeriesSites = listOf("topcinema.io", "stardima.com", "tv10.egydead.live", "a.qfilm.tv", "egybests.live", "arabseed.wine", "z1.almeshkah.net", "arabseed-tv.com", "e.cimalight.co", "watch.stardima.com", "uo.brstej.com", "laaroza.space")
+    val prioritySeriesSites = listOf("tv10.egydead.live", "a.qfilm.tv", "egybests.live", "arabseed.wine", "topcinema.io", "z1.almeshkah.net", "arabseed-tv.com", "e.cimalight.co", "stardima.com", "watch.stardima.com", "uo.brstej.com", "laaroza.space")
 
     val prioritySites = if (isAnime) priorityAnimeSites else if (isMovie) priorityMovieSites else prioritySeriesSites
 
@@ -95,9 +95,9 @@ fun ServerSelectionDialog(
         extractedServers = emptyList()
         finalWatchUrl = null
         
-        // Wait for up to 30 seconds, but check every 1 second if servers were found
+        // Wait for up to 15 seconds, but check every 1 second if servers were found
         var waited = 0
-        while (waited < 30) {
+        while (waited < 15) {
             delay(1000)
             waited++
             if (extractedServers.isNotEmpty()) {

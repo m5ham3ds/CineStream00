@@ -427,7 +427,7 @@ object SiteScripts {
                     } else if (loc.includes('searchq') || loc.includes('search') || loc.includes('?s=')) {
                         var input = document.querySelector('input[name="s"], input[name="query"], input[name="keywords"], input[name="search"]');
                         if (input && !input.value) {
-                            input.value = "${title.replace("'", "'")}";
+                            input.value = "${title.replace("'", "").replace("\"", "")}";
                             var btn = document.querySelector('button[type="submit"], input[type="submit"]');
                             if(btn) btn.click();
                             else if(input.form) input.form.submit();
@@ -445,9 +445,12 @@ object SiteScripts {
                     return;
                 }
                 
+                }
+
                 if (!isCloudflare && document.readyState === 'complete') {
                     window._failCount = (window._failCount || 0) + 1;
-                    if (window._failCount >= 4) { 
+                    var maxFails = (loc.includes('?s=') || loc.includes('search') || loc.includes('query=') || loc.includes('keywords=')) ? 2 : 4;
+                    if (window._failCount >= maxFails) { 
                         clearInterval(intervalId);
                         if (typeof AndroidBridge !== 'undefined') AndroidBridge.sendFailed();
                     }
@@ -520,6 +523,14 @@ object SiteScripts {
                 
                 var localPlay = document.querySelector('.play-button, .jw-icon-display, video, .vjs-big-play-button, .fp-play, .play-icon, #play-video, .btn-play');
                 if (localPlay) localPlay.click();
+
+                if (!isCloudflare && document.readyState === 'complete') {
+                    window._failCount = (window._failCount || 0) + 1;
+                    if (window._failCount >= 4) { 
+                        clearInterval(intervalId);
+                        if (typeof AndroidBridge !== 'undefined') AndroidBridge.sendFailed();
+                    }
+                }
             }, 1000);
         })();
         """.trimIndent()

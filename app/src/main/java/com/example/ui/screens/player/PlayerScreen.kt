@@ -277,6 +277,9 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
                     },
                     onServersFound = { servers ->
                         viewModel.updateServers(servers)
+                    },
+                    onExtractionFailed = {
+                        viewModel.tryNextFallback()
                     }
                 )
             }

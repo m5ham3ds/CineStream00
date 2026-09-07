@@ -69,7 +69,7 @@ class PlayerViewModel : ViewModel() {
         val fallbackList = when {
             isAnime -> listOf("witanime.you", "w1.anime4up.rest", "animeblkom.net") + allAnimeSites.filter { it !in listOf("witanime.you", "w1.anime4up.rest", "animeblkom.net") }
             isMovie -> listOf("tv10.egydead.live", "a.qfilm.tv", "egybests.live") + allMovieSeriesSites.filter { it !in listOf("tv10.egydead.live", "a.qfilm.tv", "egybests.live") }
-            else -> listOf("topcinema.io", "stardima.com", "tv10.egydead.live") + allMovieSeriesSites.filter { it !in listOf("topcinema.io", "stardima.com", "tv10.egydead.live") }
+            else -> listOf("tv10.egydead.live", "a.qfilm.tv", "egybests.live") + allMovieSeriesSites.filter { it !in listOf("tv10.egydead.live", "a.qfilm.tv", "egybests.live") }
         }
         
         val availableList = if (isAnime) allAnimeSites else allMovieSeriesSites
@@ -230,14 +230,14 @@ class PlayerViewModel : ViewModel() {
     private fun startExtractionTimeout() {
         extractionTimeoutJob?.cancel()
         extractionTimeoutJob = viewModelScope.launch {
-            delay(25000) // 25 seconds timeout
+            delay(10000) // 25 seconds timeout
             if (_uiState.value.currentVideoUrl == null) {
                 tryNextFallback()
             }
         }
     }
     
-    private fun tryNextFallback() {
+    fun tryNextFallback() {
         val fallbacks = _uiState.value.fallbackWebsites
         if (fallbacks.isNotEmpty()) {
             val nextSite = fallbacks.first()

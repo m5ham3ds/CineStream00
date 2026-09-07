@@ -29,7 +29,7 @@ fun HiddenVideoExtractor(
     title: String = "",
     onVideoUrlFound: (String) -> Unit,
     onIframeUrlFound: ((String) -> Unit)? = null,
-    onServersFound: ((List<String>) -> Unit)? = null
+    onServersFound: ((List<String>) -> Unit)? = null, onExtractionFailed: (() -> Unit)? = null
 ) {
     AndroidView(
         modifier = Modifier.size(1.dp).alpha(0f), // Completely invisible but active in layout
@@ -119,7 +119,7 @@ fun HiddenVideoExtractor(
                     
                     @android.webkit.JavascriptInterface
                     fun sendFailed() {
-                        // Handled implicitly by timeout
+                        Handler(Looper.getMainLooper()).post { onExtractionFailed?.invoke() }
                     }
                     
                     @android.webkit.JavascriptInterface

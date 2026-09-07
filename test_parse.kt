@@ -1,3 +1,2 @@
-fun main() {
-    println("Test")
-}
+import java.io.File
+fun main() {}
