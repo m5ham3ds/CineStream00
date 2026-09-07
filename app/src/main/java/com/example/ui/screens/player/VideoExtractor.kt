@@ -25,6 +25,7 @@ fun HiddenVideoExtractor(
     episode: Int = 1,
     targetServer: String? = null,
     targetServerId: String? = null,
+    website: String = "",
     onVideoUrlFound: (String) -> Unit,
     onIframeUrlFound: ((String) -> Unit)? = null,
     onServersFound: ((List<String>) -> Unit)? = null
@@ -59,6 +60,35 @@ fun HiddenVideoExtractor(
                                 onServersFound?.invoke(servers)
                             }
                         }
+                    }
+
+                    @android.webkit.JavascriptInterface
+                    fun sendServersV2(serversJson: String, url: String) {
+                        try {
+                            val serversData = org.json.JSONArray(serversJson)
+                            val serversNames = mutableListOf<String>()
+                            val serversMap = mutableMapOf<String, String>()
+                            val serversIds = mutableMapOf<String, String>()
+                            
+                            for (i in 0 until serversData.length()) {
+                                val item = serversData.getJSONObject(i)
+                                val name = item.getString("name")
+                                val link = if (item.has("link")) item.getString("link") else ""
+                                val id = if (item.has("id")) item.getString("id") else ""
+                                serversNames.add(name)
+                                serversMap[name] = link
+                                serversIds[name] = id
+                            }
+                            
+                            if (serversNames.isNotEmpty()) {
+                                Handler(Looper.getMainLooper()).post {
+                                    com.example.ui.screens.player.ServerStateStore.extractedServers = serversNames
+                                    com.example.ui.screens.player.ServerStateStore.extractedServerLinks = serversMap
+                                    com.example.ui.screens.player.ServerStateStore.extractedServerIds = serversIds
+                                    onServersFound?.invoke(serversNames)
+                                }
+                            }
+                        } catch (e: Exception) { e.printStackTrace() }
                     }
                     
                     @android.webkit.JavascriptInterface
@@ -103,9 +133,20 @@ fun HiddenVideoExtractor(
 
                     override fun onPageFinished(view: WebView, url: String) {
                         super.onPageFinished(view, url)
-                        // Inject script to automatically click play buttons to force stream load
-                        val autoPlayScript = com.example.ui.screens.player.SiteScripts.getScriptForVideoExtractor(url, targetServerId)
-                        view.evaluateJavascript(autoPlayScript, null)
+                        // If we don't have servers, we need to extract them first!
+                        if (com.example.ui.screens.player.ServerStateStore.extractedServers.isEmpty()) {
+                            val siteScript = com.example.ui.screens.player.SiteScripts.getScriptForSite(
+                                website, 
+                                isMovie, 
+                                episode, 
+                                ""
+                            )
+                            view.evaluateJavascript(siteScript, null)
+                        } else {
+                            // Inject script to automatically click play buttons to force stream load
+                            val autoPlayScript = com.example.ui.screens.player.SiteScripts.getScriptForVideoExtractor(url, targetServerId)
+                            view.evaluateJavascript(autoPlayScript, null)
+                        }
                     }
                 }
             }

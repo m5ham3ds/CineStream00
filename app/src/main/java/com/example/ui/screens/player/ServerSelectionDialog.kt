@@ -550,8 +550,8 @@ Dialog(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .clickable {
-                                                val serverAndQuality = "$selectedServerForQuality - ${quality.name}"
-                                                onPlay(quality.url, serverAndQuality, currentSiteName)
+                                                val serverNameOnly = selectedServerForQuality ?: "سيرفر"
+                                                onPlay(quality.url, serverNameOnly, currentSiteName)
                                             },
                                         colors = CardDefaults.cardColors(
                                             containerColor = Color(0xFF222225)

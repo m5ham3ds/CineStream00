@@ -127,7 +127,17 @@ class PlayerViewModel : ViewModel() {
     }
 
     fun selectWebsite(website: String) {
-        _uiState.value = _uiState.value.copy(currentWebsite = website, isLoading = true, currentVideoUrl = null, fallbackWebsites = emptyList())
+        com.example.ui.screens.player.ServerStateStore.clear()
+        _uiState.value = _uiState.value.copy(
+            currentWebsite = website, 
+            isLoading = true, 
+            currentVideoUrl = null, 
+            fallbackWebsites = emptyList(),
+            availableServers = emptyList(),
+            availableServerLinks = emptyMap(),
+            availableServerIds = emptyMap(),
+            currentServer = ""
+        )
         generateExtractionUrl()
     }
 
@@ -155,7 +165,7 @@ class PlayerViewModel : ViewModel() {
         }
     }
 
-    fun selectEpisode(episode: Episode) {
+    fun selectEpisode(episode: com.example.domain.models.Episode) {
         _uiState.value = _uiState.value.copy(
             currentEpisodeId = episode.id,
             currentEpisodeNumber = episode.episodeNumber,
@@ -188,10 +198,25 @@ class PlayerViewModel : ViewModel() {
 
     fun updateServers(servers: List<String>) {
         if (_uiState.value.availableServers != servers && servers.isNotEmpty()) {
+            val firstServer = servers.first()
+            val link = com.example.ui.screens.player.ServerStateStore.extractedServerLinks[firstServer]
+            val id = com.example.ui.screens.player.ServerStateStore.extractedServerIds[firstServer]
+            
+            var nextExtractionUrl = _uiState.value.extractionUrl
+            if (link != null && link.isNotEmpty()) {
+                nextExtractionUrl = link
+            }
+            
             _uiState.value = _uiState.value.copy(
                 availableServers = servers,
-                currentServer = servers.first()
+                currentServer = firstServer,
+                extractionUrl = nextExtractionUrl,
+                serverIdToChange = id
             )
+            
+            if (nextExtractionUrl != null) {
+                startExtractionTimeout()
+            }
         }
     }
 
