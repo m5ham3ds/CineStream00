@@ -1,4 +1,4 @@
-with open('app/src/main/java/com/example/ui/screens/player/ServerSelectionDialog.kt', 'r') as f:
+with open('app/src/main/java/com/example/ui/screens/player/SiteScripts.kt', 'r') as f:
     text = f.read()
 
 def count_braces(s):

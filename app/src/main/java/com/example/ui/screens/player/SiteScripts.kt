@@ -37,11 +37,31 @@ object SiteScripts {
                     }
                 } 
                 else if ("$siteName" === "animeblkom.net") {
-                    document.querySelectorAll('.servers .slider .item span.server a').forEach(function(a) {
-                        var name = a.textContent.trim();
-                        var link = a.getAttribute('data-src');
-                        if (link) serverItems.push({ name: name, link: link });
-                    });
+                    var serverLinks = document.querySelectorAll('.servers .slider .item span.server a');
+                    if (serverLinks && serverLinks.length > 0) {
+                        serverLinks.forEach(function(a) {
+                            var name = a.textContent.trim();
+                            var link = a.getAttribute('data-src');
+                            if (link && link.startsWith('http')) {
+                                serverItems.push({ name: name, link: link });
+                            }
+                        });
+                    }
+                    if (serverItems.length === 0) {
+                        var currentIframe = document.querySelector('.video iframe');
+                        if (currentIframe && currentIframe.src && currentIframe.src.startsWith('http')) {
+                            serverItems.push({ name: 'السيرفر الحالي', link: currentIframe.src });
+                        }
+                    }
+                    if (serverItems.length > 0 && serverItems.every(function(s) { return s.name === ''; })) {
+                        var serverSpans = document.querySelectorAll('.servers .slider .item span.server');
+                        serverSpans.forEach(function(span, index) {
+                            if (index < serverItems.length) {
+                                var name = span.className.replace('server', '').trim() || ('سيرفر ' + (index + 1));
+                                serverItems[index].name = name;
+                            }
+                        });
+                    }
                 }
                 else if ("$siteName" === "arabanime.net") {
                     var datawatchElement = document.getElementById('datawatch');
@@ -51,10 +71,14 @@ object SiteScripts {
                             var data = JSON.parse(jsonString);
                             if (data.ep_info && data.ep_info.length > 0) {
                                 var servers = data.ep_info[0].stream_servers || [];
+                                var serverNames = data.ep_info[0].server_names || [];
                                 servers.forEach(function(encodedUrl, index) {
                                     try {
                                         var decodedUrl = atob(encodedUrl);
-                                        if (decodedUrl.startsWith('http')) serverItems.push({ name: 'سيرفر ' + (index + 1), link: decodedUrl });
+                                        if (decodedUrl.startsWith('http')) {
+                                            var name = (index < serverNames.length && serverNames[index]) ? serverNames[index] : ('سيرفر ' + (index + 1));
+                                            serverItems.push({ name: name, link: decodedUrl });
+                                        }
                                     } catch(e) {}
                                 });
                             }
@@ -63,7 +87,12 @@ object SiteScripts {
                     if (serverItems.length === 0) {
                         var serverInput = document.querySelector('form#form input[name="servers"]');
                         if (serverInput && serverInput.value) {
-                            try { serverItems.push({ name: 'السيرفر الرئيسي', link: atob(serverInput.value) }); } catch(e) {}
+                            try {
+                                var decodedUrl = atob(serverInput.value);
+                                if (decodedUrl.startsWith('http')) {
+                                    serverItems.push({ name: 'السيرفر الرئيسي', link: decodedUrl });
+                                }
+                            } catch(e) {}
                         }
                     }
                     if (serverItems.length === 0) {
@@ -72,16 +101,34 @@ object SiteScripts {
                     }
                 }
                 else if ("$siteName" === "det.animerco.org") {
-                    document.querySelectorAll('ul.server-list li a.option').forEach(function(el) {
-                        var name = el.querySelector('.server') ? el.querySelector('.server').innerText.trim() : 'سيرفر';
-                        var post = el.getAttribute('data-post');
-                        var nume = el.getAttribute('data-nume');
-                        var nonce = el.getAttribute('data-nonce');
-                        var type = el.getAttribute('data-type');
-                        if (post && nume && nonce) {
-                            serverItems.push({ name: name, link: window.location.href, id: post + '|' + nume + '|' + nonce + '|' + type });
+                    var serverLinks = document.querySelectorAll('ul.server-list li a.option');
+                    if (serverLinks && serverLinks.length > 0) {
+                        var activeIframe = document.querySelector('#player iframe');
+                        var activeSrc = activeIframe ? activeIframe.src : '';
+                        
+                        serverLinks.forEach(function(el, index) {
+                            var name = el.querySelector('.server') ? el.querySelector('.server').innerText.trim() : ('سيرفر ' + (index + 1));
+                            var post = el.getAttribute('data-post');
+                            var nume = el.getAttribute('data-nume');
+                            var nonce = el.getAttribute('data-nonce');
+                            var type = el.getAttribute('data-type');
+                            
+                            if (post && nume && nonce) {
+                                var link = el.classList.contains('active') ? activeSrc : window.location.href;
+                                serverItems.push({
+                                    name: name,
+                                    link: link,
+                                    id: post + '|' + nume + '|' + nonce + '|' + type
+                                });
+                            }
+                        });
+                    }
+                    if (serverItems.length === 0) {
+                        var iframe = document.querySelector('#player iframe');
+                        if (iframe && iframe.src && iframe.src.startsWith('http')) {
+                            serverItems.push({ name: 'السيرفر الرئيسي', link: iframe.src });
                         }
-                    });
+                    }
                 }
                 else if ("$siteName" === "vip.animeluxe.org") {
                     document.querySelectorAll('ul.server-list li a[data-url]').forEach(function(el) {
@@ -110,19 +157,41 @@ object SiteScripts {
                     });
                 }
                 else if ("$siteName" === "a.qfilm.tv") {
-                    var serverArray = window.servers;
-                    if (!serverArray && typeof servers !== 'undefined') serverArray = servers;
-                    if (serverArray && Array.isArray(serverArray)) {
+                    var serverArray = null;
+                    if (typeof servers !== 'undefined' && Array.isArray(servers)) {
+                        serverArray = servers;
+                    } else if (typeof window.servers !== 'undefined' && Array.isArray(window.servers)) {
+                        serverArray = window.servers;
+                    }
+                    if (serverArray && serverArray.length > 0) {
                         var buttons = document.querySelectorAll('.server-btn');
                         var names = [];
-                        buttons.forEach(function(btn) { names.push(btn.innerText.trim()); });
-                        for (var i = 0; i < serverArray.length; i++) {
+                        buttons.forEach(function(btn) {
+                            var name = btn.textContent.trim();
+                            name = name.replace(/[^\w\s\u0600-\u06FF]/gi, '').trim();
+                            if (!name) name = 'سيرفر';
+                            names.push(name);
+                        });
+                        for (var i = 0; i < serverArray.length && i < 20; i++) {
                             var iframeHtml = serverArray[i];
-                            var srcMatch = iframeHtml.match(/src=["']([^"']+)["']/);
-                            if (srcMatch) {
-                                var name = (i < names.length && names[i]) ? names[i] : ('سيرفر ' + (i+1));
-                                serverItems.push({ name: name, link: srcMatch[1] });
+                            var parser = new DOMParser();
+                            var doc = parser.parseFromString(iframeHtml, 'text/html');
+                            var iframe = doc.querySelector('iframe');
+                            var src = iframe ? iframe.getAttribute('src') : null;
+                            if (!src) {
+                                var srcMatch = iframeHtml.match(/src=["']([^"']+)["']/);
+                                if (srcMatch) src = srcMatch[1];
                             }
+                            if (src && src.startsWith('http')) {
+                                var name = (i < names.length && names[i]) ? names[i] : ('سيرفر ' + (i+1));
+                                serverItems.push({ name: name, link: src });
+                            }
+                        }
+                    }
+                    if (serverItems.length === 0) {
+                        var currentIframe = document.querySelector('.embed_server iframe');
+                        if (currentIframe && currentIframe.src && currentIframe.src.startsWith('http')) {
+                            serverItems.push({ name: 'السيرفر الحالي', link: currentIframe.src });
                         }
                     }
                 }
@@ -148,8 +217,17 @@ if (!name) name = 'سيرفر ' + (i+1);
                 else if ("$siteName" === "egybests.live") {
                     var items = document.querySelectorAll('#watch-servers-list li');
                     if (items.length === 0) items = document.querySelectorAll('.servList li');
+                    
+                    var nameCount = {};
                     for (var i = 0; i < items.length; i++) {
-                        var name = items[i].innerText.trim() || items[i].textContent.trim() || ('سيرفر ' + (i+1));
+                        var rawName = items[i].innerText.trim() || items[i].textContent.trim() || ('سيرفر');
+                        var baseName = rawName.replace(/[^\w\s\u0600-\u06FF]/gi, '').trim();
+                        if (!baseName) baseName = 'سيرفر';
+                        
+                        if (!nameCount[baseName]) nameCount[baseName] = 0;
+                        nameCount[baseName]++;
+                        var name = baseName + (nameCount[baseName] > 1 ? ' ' + nameCount[baseName] : '');
+                        
                         var onclick = items[i].getAttribute('onclick');
                         var url = '';
                         if (onclick) {
@@ -171,11 +249,23 @@ if (!name) name = 'سيرفر ' + (i+1);
                     }
                 }
                 else if ("$siteName" === "laaroza.space") {
-                    document.querySelectorAll('#pm-servers ul.WatchList li').forEach(function(li) {
-                        var name = li.querySelector('strong') ? li.querySelector('strong').textContent.trim() : 'سيرفر';
-                        var embed = li.getAttribute('data-embed-url');
-                        if (embed) serverItems.push({ name: name, link: embed });
-                    });
+                    var serverLinks = document.querySelectorAll('#pm-servers ul.WatchList li');
+                    if (serverLinks && serverLinks.length > 0) {
+                        serverLinks.forEach(function(li) {
+                            var name = li.querySelector('strong') ? li.querySelector('strong').textContent.trim() : 'سيرفر';
+                            name = name.replace(/\s+/g, ' ').trim();
+                            var embed = li.getAttribute('data-embed-url');
+                            if (embed && embed.startsWith('http')) {
+                                serverItems.push({ name: name, link: embed });
+                            }
+                        });
+                    }
+                    if (serverItems.length === 0) {
+                        var iframe = document.querySelector('#Playerholder iframe');
+                        if (iframe && iframe.src && iframe.src.startsWith('http')) {
+                            serverItems.push({ name: 'السيرفر الرئيسي', link: iframe.src });
+                        }
+                    }
                 }
                 else if ("$siteName" === "stardima.com" || "$siteName" === "watch.stardima.com") {
                     document.querySelectorAll('#playeroptionsul li.dooplay_player_option').forEach(function(el) {
