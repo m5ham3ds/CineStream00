@@ -1,7 +1,8 @@
 package com.example.ui.screens.auth
 
 import android.net.Uri
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.repository.AuthRepository
 import com.example.data.repository.User
@@ -11,7 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
-class AuthViewModel : ViewModel() {
+class AuthViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = AuthRepository
     
     val currentUser: StateFlow<User?> = repository.currentUserFlow
@@ -226,7 +227,7 @@ class AuthViewModel : ViewModel() {
     fun signOut() {
         repository.auth.signOut()
         viewModelScope.launch { 
-            com.example.data.sync.CloudSyncManager(com.example.MyApplication.instance).clearLocalData()
+            com.example.data.sync.CloudSyncManager(getApplication()).clearLocalData()
             repository.getCurrentUser() 
         }
     }

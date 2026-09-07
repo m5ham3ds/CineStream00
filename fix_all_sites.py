@@ -1,8 +1,13 @@
-package com.example.ui.screens.player
+import re
+
+with open('app/src/main/java/com/example/ui/screens/player/SiteScripts.kt', 'r') as f:
+    site_content = f.read()
+
+new_site_scripts = """package com.example.ui.screens.player
 
 object SiteScripts {
     fun getScriptForSite(siteName: String, isMovie: Boolean, episode: Int, title: String): String {
-        return """
+        return \"\"\"
         (function() {
             var intervalId = setInterval(function() {
                 var isCloudflareTitle = document.title.includes('Just a moment') || document.title.includes('Cloudflare') || document.title.includes('Attention Required');
@@ -188,7 +193,7 @@ object SiteScripts {
                 }
                 else if ("$siteName" === "e.cimalight.co") {
                     document.querySelectorAll('.embeding ul li, #sServer ul li').forEach(function(li) {
-                        var name = li.textContent.trim().replace(/[^\w\s\u0600-\u06FF]/g, '').trim();
+                        var name = li.textContent.trim().replace(/[^\\w\\s\\u0600-\\u06FF]/g, '').trim();
                         var embed = li.getAttribute('data-embed');
                         if (embed) serverItems.push({ name: name, link: embed });
                     });
@@ -199,7 +204,7 @@ object SiteScripts {
                     var nameCount = {};
                     for (var i = 0; i < items.length; i++) {
                         var rawName = items[i].innerText.trim() || items[i].textContent.trim() || ('سيرفر');
-                        var baseName = rawName.replace(/[^\w\s\u0600-\u06FF]/gi, '').trim();
+                        var baseName = rawName.replace(/[^\\w\\s\\u0600-\\u06FF]/gi, '').trim();
                         if (!baseName) baseName = 'سيرفر';
                         if (!nameCount[baseName]) nameCount[baseName] = 0;
                         nameCount[baseName]++;
@@ -208,7 +213,7 @@ object SiteScripts {
                         var onclick = items[i].getAttribute('onclick');
                         var url = '';
                         if (onclick) {
-                            var match = onclick.match(/loadIframe\(this,\s*'([^']+)'\)/);
+                            var match = onclick.match(/loadIframe\\(this,\\s*'([^']+)'\\)/);
                             if (match) url = match[1];
                         }
                         if (!url) url = items[i].getAttribute('data-link') || items[i].getAttribute('data-url') || '';
@@ -230,7 +235,7 @@ object SiteScripts {
                     if (serverLinks && serverLinks.length > 0) {
                         serverLinks.forEach(function(li) {
                             var name = li.querySelector('strong') ? li.querySelector('strong').textContent.trim() : 'سيرفر';
-                            name = name.replace(/\s+/g, ' ').trim();
+                            name = name.replace(/\\s+/g, ' ').trim();
                             var embed = li.getAttribute('data-embed-url');
                             if (embed && embed.startsWith('http')) {
                                 serverItems.push({ name: name, link: embed, active: li.classList.contains('active') });
@@ -281,7 +286,7 @@ object SiteScripts {
                         serverLinks.forEach(function(el, index) {
                             var nameEl = el.querySelector('p') || el.querySelector('span');
                             var name = nameEl ? nameEl.textContent.trim() : ('سيرفر ' + (index + 1));
-                            name = name.replace(/\s+/g, ' ').trim();
+                            name = name.replace(/\\s+/g, ' ').trim();
                             var link = el.getAttribute('data-link') || el.getAttribute('data-src') || el.getAttribute('data-server');
                             if (link && link.startsWith('http')) serverItems.push({ name: name, link: link });
                         });
@@ -295,7 +300,7 @@ object SiteScripts {
                 }
                 else if ("$siteName" === "uo.brstej.com") {
                     document.querySelectorAll('#WatchServers button.watchButton').forEach(function(btn) {
-                        var name = btn.innerText.trim().replace(/[^\w\s\u0600-\u06FF]/g, '').trim();
+                        var name = btn.innerText.trim().replace(/[^\\w\\s\\u0600-\\u06FF]/g, '').trim();
                         var link = btn.getAttribute('data-embed-url');
                         var id = btn.getAttribute('data-embed-id');
                         if (link) serverItems.push({ name: name, link: link, id: id });
@@ -306,7 +311,7 @@ object SiteScripts {
                         try {
                             var decodedUrl = atob(el.getAttribute('data-url'));
                             if (decodedUrl.startsWith('http')) {
-                                var name = el.innerText.replace(/[^\w\s\u0600-\u06FF]/gi, '').trim();
+                                var name = el.innerText.replace(/[^\\w\\s\\u0600-\\u06FF]/gi, '').trim();
                                 if(!name) name = 'سيرفر';
                                 serverItems.push({ name: name, link: decodedUrl });
                             }
@@ -348,7 +353,7 @@ object SiteScripts {
                         var buttons = document.querySelectorAll('.server-btn');
                         var names = [];
                         buttons.forEach(function(btn) {
-                            var name = btn.textContent.trim().replace(/[^\w\s\u0600-\u06FF]/gi, '').trim();
+                            var name = btn.textContent.trim().replace(/[^\\w\\s\\u0600-\\u06FF]/gi, '').trim();
                             if (!name) name = 'سيرفر';
                             names.push(name);
                         });
@@ -385,7 +390,7 @@ object SiteScripts {
                 
                 // --- SMART SEARCH RESULT MATCHER ---
                 if (serverItems.length === 0 && (!loc.includes('watch') && !loc.includes('episode') && !loc.includes('movie'))) {
-                    var searchTarget = "${title.lowercase().replace("'", "'")}";
+                    var searchTarget = "${title.lowercase().replace("'", "\'")}";
                     var results = document.querySelectorAll('a.postBlock, section.main-section ul.posts-list li.movieItem a, .movieItem a, .postBlock a, ul.pm-ul-browse-videos li a, ul.movie__blocks__ul li a.movie__block, ul.series__ul li a, div.media-block a.image, div.owl-animes a.overlay, div.embla__slide a, .movie-card a, .anime-card a, .item-list a, article a, .post a, .thumb a, .Blocks-Area a.Block-Item, .ep-card a, .episode-card a, .box-item a, .hover-content a, .anime-list-content a, .half-post a, .Block-Item, a.header-featured-item, a.movie-item__link, .pm-video-thumb a, .lucodeia-slider-slide-item, a.overlay, a.absolute.inset-0, .GridItem a');
                     
                     if (results && results.length > 0) {
@@ -427,7 +432,7 @@ object SiteScripts {
                     } else if (loc.includes('searchq') || loc.includes('search') || loc.includes('?s=')) {
                         var input = document.querySelector('input[name="s"], input[name="query"], input[name="keywords"], input[name="search"]');
                         if (input && !input.value) {
-                            input.value = "${title.replace("'", "'")}";
+                            input.value = "${title.replace("'", "\'")}";
                             var btn = document.querySelector('button[type="submit"], input[type="submit"]');
                             if(btn) btn.click();
                             else if(input.form) input.form.submit();
@@ -454,11 +459,11 @@ object SiteScripts {
                 }
             }, 1500);
         })();
-        """.trimIndent()
+        \"\"\".trimIndent()
     }
 
     fun getScriptForVideoExtractor(url: String, targetServerId: String? = null): String {
-        return """
+        return \"\"\"
         (function() {
             var intervalId = setInterval(function() {
                 var isCloudflare = document.title.includes('Just a moment') || document.title.includes('Cloudflare') || document.title.includes('Attention Required');
@@ -522,6 +527,111 @@ object SiteScripts {
                 if (localPlay) localPlay.click();
             }, 1000);
         })();
-        """.trimIndent()
+        \"\"\".trimIndent()
     }
 }
+"""
+
+with open('app/src/main/java/com/example/ui/screens/player/SiteScripts.kt', 'w') as f:
+    f.write(new_site_scripts)
+
+# Next, PlayerViewModel.kt update
+with open('app/src/main/java/com/example/ui/screens/player/PlayerViewModel.kt', 'r') as f:
+    vm_content = f.read()
+
+# Update setIframeUrl to timeout much faster
+vm_replace = """    fun setIframeUrl(url: String) {
+        extractionTimeoutJob?.cancel()
+        _uiState.value = _uiState.value.copy(
+            extractionUrl = url,
+            isLoading = true,
+            currentVideoUrl = null
+        )
+        // Only wait 3 seconds to see if a direct video can be extracted from this iframe
+        extractionTimeoutJob = viewModelScope.launch {
+            kotlinx.coroutines.delay(3000)
+            if (_uiState.value.currentVideoUrl == null) {
+                // If no direct video found, just use the iframe as the final video URL
+                setFinalVideoUrl(url)
+            }
+        }
+    }"""
+
+import re
+vm_content = re.sub(r'    fun setIframeUrl\(url: String\) \{.*?(?=    fun updateServers)', vm_replace + '\n\n', vm_content, flags=re.DOTALL)
+
+# Update startExtractionTimeout
+vm_replace_timeout = """    private fun startExtractionTimeout() {
+        extractionTimeoutJob?.cancel()
+        extractionTimeoutJob = viewModelScope.launch {
+            kotlinx.coroutines.delay(12000) // 12 seconds overall timeout
+            if (_uiState.value.currentVideoUrl == null) {
+                if (_uiState.value.extractionUrl != null) {
+                    setFinalVideoUrl(_uiState.value.extractionUrl!!)
+                } else {
+                    tryNextFallback()
+                }
+            }
+        }
+    }"""
+
+vm_content = re.sub(r'    private fun startExtractionTimeout\(\) \{.*?(?=    fun selectWebsite)', vm_replace_timeout + '\n\n', vm_content, flags=re.DOTALL)
+
+with open('app/src/main/java/com/example/ui/screens/player/PlayerViewModel.kt', 'w') as f:
+    f.write(vm_content)
+
+# Finally, PlayerScreen.kt update for WebView support
+with open('app/src/main/java/com/example/ui/screens/player/PlayerScreen.kt', 'r') as f:
+    ps_content = f.read()
+
+# Make sure we have the imports
+if 'import android.webkit.WebViewClient' not in ps_content:
+    ps_content = ps_content.replace('import android.webkit.WebView', 'import android.webkit.WebView\nimport android.webkit.WebViewClient\nimport android.webkit.CookieManager')
+
+ps_replace = """        if (uiState.currentVideoUrl != null) {
+            val videoUrl = uiState.currentVideoUrl!!
+            val isDirectVideo = videoUrl.endsWith(".m3u8") || videoUrl.endsWith(".mp4") || videoUrl.endsWith(".mkv") || videoUrl.contains("videodelivery.net") || videoUrl.contains("v.mp4") || videoUrl.contains("v2.hyperwatching.com") == false && videoUrl.contains("play.vidyard.com") == false && videoUrl.contains(".html") == false && videoUrl.contains("iframe") == false && videoUrl.contains("embed") == false
+            
+            if (isDirectVideo && uiState.currentVideoUrl?.contains("embed") != true && uiState.currentVideoUrl?.contains("iframe") != true) {
+                AndroidView(
+                    factory = { ctx ->
+                        PlayerView(ctx).apply {
+                            player = exoPlayer
+                            useController = false
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                AndroidView(
+                    factory = { ctx ->
+                        WebView(ctx).apply {
+                            settings.apply {
+                                javaScriptEnabled = true
+                                domStorageEnabled = true
+                                mediaPlaybackRequiresUserGesture = false
+                                useWideViewPort = true
+                                loadWithOverviewMode = true
+                                setSupportZoom(true)
+                                builtInZoomControls = true
+                                displayZoomControls = false
+                                val originalUserAgent = WebSettings.getDefaultUserAgent(ctx)
+                                userAgentString = originalUserAgent.replace("; wv", "").replace("Version/4.0 ", "")
+                            }
+                            val cookieManager = CookieManager.getInstance()
+                            cookieManager.setAcceptCookie(true)
+                            cookieManager.setAcceptThirdPartyCookies(this, true)
+                            webViewClient = WebViewClient()
+                            loadUrl(videoUrl)
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        }"""
+
+ps_content = re.sub(r'        AndroidView\(\n            factory = \{ ctx ->\n                PlayerView\(ctx\)\.apply \{\n                    player = exoPlayer\n                    useController = false\n                \}\n            \},\n            modifier = Modifier\.fillMaxSize\(\)\n        \)', ps_replace, ps_content)
+
+with open('app/src/main/java/com/example/ui/screens/player/PlayerScreen.kt', 'w') as f:
+    f.write(ps_content)
+

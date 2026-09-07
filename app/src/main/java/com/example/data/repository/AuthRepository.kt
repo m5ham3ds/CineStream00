@@ -38,7 +38,10 @@ object AuthRepository {
                 try {
                     com.cloudinary.android.MediaManager.get()
                 } catch (e: Exception) {
-                    com.cloudinary.android.MediaManager.init(com.example.MyApplication.instance, mapOf("cloud_name" to cloudName))
+                    // This function is typically called from a ViewModel where context isn't directly available.
+                    // Instead, MediaManager should be initialized in MyApplication.
+                    // For safety here, we throw an error if it's not initialized.
+                    throw Exception("Cloudinary MediaManager not initialized. Must be initialized in Application class.")
                 }
                 
                 val cloudinaryUrl = suspendCancellableCoroutine<String> { continuation ->

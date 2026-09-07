@@ -28,14 +28,14 @@ object RetrofitClient {
     private val cacheSize = (50 * 1024 * 1024).toLong() // 50 MB
 
     private fun isNetworkAvailable(): Boolean {
-        val connectivityManager = MyApplication.instance.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val connectivityManager = com.example.di.AppContainer.application.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val activeNetworkInfo = connectivityManager.activeNetworkInfo
         return activeNetworkInfo != null && activeNetworkInfo.isConnected
     }
 
     private val okHttpClient by lazy {
         OkHttpClient.Builder()
-            .cache(Cache(File(MyApplication.instance.cacheDir, "http_cache"), cacheSize))
+            .cache(Cache(File(com.example.di.AppContainer.application.cacheDir, "http_cache"), cacheSize))
             .addInterceptor { chain ->
                 var request = chain.request()
                 if (isNetworkAvailable()) {

@@ -10,15 +10,10 @@ import java.io.File
 
 class MyApplication : Application(), ImageLoaderFactory {
     
-    companion object {
-        lateinit var instance: MyApplication
-            private set
-    }
-
     override fun onCreate() {
-
         super.onCreate()
-        instance = this
+        
+        com.example.di.AppContainer.application = this
         
         val cloudName = com.example.BuildConfig.CLOUDINARY_CLOUD_NAME
         if (cloudName.isNotEmpty()) {

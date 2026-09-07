@@ -4,6 +4,8 @@ import android.app.Activity
 import android.content.pm.ActivityInfo
 import android.webkit.WebSettings
 import android.webkit.WebView
+import android.webkit.WebViewClient
+import android.webkit.CookieManager
 import androidx.annotation.OptIn
 import androidx.compose.animation.*
 import androidx.compose.foundation.Canvas
@@ -214,15 +216,47 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
                 showControls = !showControls
             }
     ) {
-        AndroidView(
-            factory = { ctx ->
-                PlayerView(ctx).apply {
-                    player = exoPlayer
-                    useController = false
-                }
-            },
-            modifier = Modifier.fillMaxSize()
-        )
+        if (uiState.currentVideoUrl != null) {
+            val videoUrl = uiState.currentVideoUrl!!
+            val isDirectVideo = videoUrl.endsWith(".m3u8") || videoUrl.endsWith(".mp4") || videoUrl.endsWith(".mkv") || videoUrl.contains("videodelivery.net") || videoUrl.contains("v.mp4") || videoUrl.contains("v2.hyperwatching.com") == false && videoUrl.contains("play.vidyard.com") == false && videoUrl.contains(".html") == false && videoUrl.contains("iframe") == false && videoUrl.contains("embed") == false
+            
+            if (isDirectVideo && uiState.currentVideoUrl?.contains("embed") != true && uiState.currentVideoUrl?.contains("iframe") != true) {
+                AndroidView(
+                    factory = { ctx ->
+                        PlayerView(ctx).apply {
+                            player = exoPlayer
+                            useController = false
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                AndroidView(
+                    factory = { ctx ->
+                        WebView(ctx).apply {
+                            settings.apply {
+                                javaScriptEnabled = true
+                                domStorageEnabled = true
+                                mediaPlaybackRequiresUserGesture = false
+                                useWideViewPort = true
+                                loadWithOverviewMode = true
+                                setSupportZoom(true)
+                                builtInZoomControls = true
+                                displayZoomControls = false
+                                val originalUserAgent = WebSettings.getDefaultUserAgent(ctx)
+                                userAgentString = originalUserAgent.replace("; wv", "").replace("Version/4.0 ", "")
+                            }
+                            val cookieManager = CookieManager.getInstance()
+                            cookieManager.setAcceptCookie(true)
+                            cookieManager.setAcceptThirdPartyCookies(this, true)
+                            webViewClient = WebViewClient()
+                            loadUrl(videoUrl)
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        }
         
         // Only load the webview when we don't have a video URL to save data and prevent double-loading
         if (uiState.currentVideoUrl == null) {

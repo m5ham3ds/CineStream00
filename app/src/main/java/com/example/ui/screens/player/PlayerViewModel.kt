@@ -193,7 +193,14 @@ class PlayerViewModel : ViewModel() {
             isLoading = true,
             currentVideoUrl = null
         )
-        startExtractionTimeout()
+        // Only wait 3 seconds to see if a direct video can be extracted from this iframe
+        extractionTimeoutJob = viewModelScope.launch {
+            kotlinx.coroutines.delay(3000)
+            if (_uiState.value.currentVideoUrl == null) {
+                // If no direct video found, just use the iframe as the final video URL
+                setFinalVideoUrl(url)
+            }
+        }
     }
 
     fun updateServers(servers: List<String>) {
