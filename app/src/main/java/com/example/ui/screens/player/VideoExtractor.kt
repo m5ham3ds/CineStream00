@@ -26,6 +26,7 @@ fun HiddenVideoExtractor(
     targetServer: String? = null,
     targetServerId: String? = null,
     website: String = "",
+    title: String = "",
     onVideoUrlFound: (String) -> Unit,
     onIframeUrlFound: ((String) -> Unit)? = null,
     onServersFound: ((List<String>) -> Unit)? = null
@@ -61,6 +62,7 @@ fun HiddenVideoExtractor(
                 cookieManager.setAcceptCookie(true)
                 cookieManager.setAcceptThirdPartyCookies(this, true)
 
+                
                 addJavascriptInterface(object {
                     @android.webkit.JavascriptInterface
                     fun sendServers(serversStr: String) {
@@ -107,7 +109,25 @@ fun HiddenVideoExtractor(
                             onIframeUrlFound?.invoke(url) ?: onVideoUrlFound(url)
                         }
                     }
+                    
+                    @android.webkit.JavascriptInterface
+                    fun sendVideoUrl(url: String) {
+                        Handler(Looper.getMainLooper()).post {
+                            onVideoUrlFound(url)
+                        }
+                    }
+                    
+                    @android.webkit.JavascriptInterface
+                    fun sendFailed() {
+                        // Handled implicitly by timeout
+                    }
+                    
+                    @android.webkit.JavascriptInterface
+                    fun sendBypassStatus(status: String) {
+                        // Log bypass status
+                    }
                 }, "AndroidBridge")
+
 
                 webViewClient = object : WebViewClient() {
                     var found = false
@@ -156,7 +176,7 @@ fun HiddenVideoExtractor(
                                 website, 
                                 isMovie, 
                                 episode, 
-                                ""
+                                title
                             )
                             view.evaluateJavascript(siteScript, null)
                         } else {
