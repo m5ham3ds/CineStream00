@@ -71,7 +71,15 @@ fun BackgroundWebView(
                         databaseEnabled = true
                         javaScriptCanOpenWindowsAutomatically = true
                         // Using the system default user agent is the most reliable way to avoid Cloudflare bot detection
-                        userAgentString = WebSettings.getDefaultUserAgent(ctx)
+                        val originalUserAgent = WebSettings.getDefaultUserAgent(ctx)
+                    userAgentString = originalUserAgent.replace("; wv", "").replace("Version/4.0 ", "")
+                    setSupportZoom(true)
+                    builtInZoomControls = true
+                    displayZoomControls = false
+                    useWideViewPort = true
+                    loadWithOverviewMode = true
+                    allowFileAccess = true
+                    allowContentAccess = true
                         mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
                         cacheMode = WebSettings.LOAD_DEFAULT
                         mediaPlaybackRequiresUserGesture = false
@@ -86,8 +94,18 @@ fun BackgroundWebView(
                         private var checkRunnable: Runnable? = null
                         private var isBypassed = false
 
-                        override fun onReceivedSslError(view: WebView?, handler: android.webkit.SslErrorHandler?, error: android.net.http.SslError?) {
+                                                override fun onReceivedSslError(view: WebView?, handler: android.webkit.SslErrorHandler?, error: android.net.http.SslError?) {
                             handler?.proceed()
+                        }
+                        
+                        override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+                            view?.evaluateJavascript("""
+                                Object.defineProperty(navigator, 'webdriver', { get: () => false });
+                                Object.defineProperty(navigator, 'languages', { get: () => ['ar', 'en-US', 'en'] });
+                                Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
+                                window.chrome = { runtime: {} };
+                            """.trimIndent(), null)
+                            super.onPageStarted(view, url, favicon)
                         }
 
                         override fun onPageFinished(view: WebView, url: String) {
@@ -157,7 +175,11 @@ fun BackgroundWebView(
             update = { webView ->
                 if (webView.url != currentUrl) {
                     onProgress(currentUrl)
-                    webView.loadUrl(currentUrl)
+                    val extraHeaders = mutableMapOf<String, String>()
+                    extraHeaders["Accept-Language"] = "ar,en-US;q=0.9,en;q=0.8"
+                    extraHeaders["DNT"] = "1"
+                    extraHeaders["Upgrade-Insecure-Requests"] = "1"
+                    webView.loadUrl(currentUrl, extraHeaders)
                 } else if (reloadTrigger > 0) {
                     webView.reload()
                 }

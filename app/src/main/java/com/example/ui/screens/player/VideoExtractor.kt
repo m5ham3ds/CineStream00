@@ -40,11 +40,21 @@ fun HiddenVideoExtractor(
                     domStorageEnabled = true
                     databaseEnabled = true
                     javaScriptCanOpenWindowsAutomatically = true
-                    userAgentString = WebSettings.getDefaultUserAgent(ctx)
                     mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
                     cacheMode = WebSettings.LOAD_DEFAULT
                     // This is critical: force media to auto-play so we can catch the network request
                     mediaPlaybackRequiresUserGesture = false 
+                    
+                    // Spoofing settings to look like real Chrome
+                    val originalUserAgent = WebSettings.getDefaultUserAgent(ctx)
+                    userAgentString = originalUserAgent.replace("; wv", "").replace("Version/4.0 ", "")
+                    setSupportZoom(true)
+                    builtInZoomControls = true
+                    displayZoomControls = false
+                    useWideViewPort = true
+                    loadWithOverviewMode = true
+                    allowFileAccess = true
+                    allowContentAccess = true
                 }
 
                 val cookieManager = CookieManager.getInstance()
@@ -108,6 +118,13 @@ fun HiddenVideoExtractor(
 
                     override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
                         found = false
+                                                // Spoof navigator properties to evade bot detection
+                        view?.evaluateJavascript("""
+                            Object.defineProperty(navigator, 'webdriver', { get: () => false });
+                            Object.defineProperty(navigator, 'languages', { get: () => ['ar', 'en-US', 'en'] });
+                            Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
+                            window.chrome = { runtime: {} };
+                        """.trimIndent(), null)
                         super.onPageStarted(view, url, favicon)
                     }
 
@@ -159,7 +176,15 @@ fun HiddenVideoExtractor(
             if (lastUrl != url) {
                 webView.setTag(com.example.R.id.tag_url, url)
                 webView.setTag(com.example.R.id.tag_server, targetServer)
-                webView.loadUrl(url)
+                val extraHeaders = mutableMapOf<String, String>()
+                extraHeaders["Accept-Language"] = "ar,en-US;q=0.9,en;q=0.8"
+                extraHeaders["DNT"] = "1"
+                extraHeaders["Upgrade-Insecure-Requests"] = "1"
+                extraHeaders["Sec-Fetch-Dest"] = "document"
+                extraHeaders["Sec-Fetch-Mode"] = "navigate"
+                extraHeaders["Sec-Fetch-Site"] = "none"
+                extraHeaders["Sec-Fetch-User"] = "?1"
+                webView.loadUrl(url, extraHeaders)
             } else if (lastServer != targetServer) {
                 webView.setTag(com.example.R.id.tag_server, targetServer)
                 webView.reload() // Server changed, reload the page
