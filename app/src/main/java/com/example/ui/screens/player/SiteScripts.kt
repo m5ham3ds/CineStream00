@@ -4,8 +4,7 @@ object SiteScripts {
     fun getScriptForSite(siteName: String, isMovie: Boolean, episode: Int, title: String): String {
         return """
         (function() {
-    if (window._aistudioScriptInjected) return;
-    window._aistudioScriptInjected = true;
+            if (window._aistudioIntervalId) clearInterval(window._aistudioIntervalId);
 
                 function logDebug(msg) {
                     if (typeof AndroidBridge !== 'undefined' && AndroidBridge.logDebug) {
@@ -13,9 +12,7 @@ object SiteScripts {
                     }
                 }
 
-            var intervalId = setInterval(function() {
-    if (window._aistudioScriptInjected) return;
-    window._aistudioScriptInjected = true;
+            window._aistudioIntervalId = setInterval(function() {
 
                 function logDebug(msg) {
                     if (typeof AndroidBridge !== 'undefined' && AndroidBridge.logDebug) {
@@ -144,8 +141,6 @@ object SiteScripts {
                         if (!window._animeatRetried) {
                             window._animeatRetried = true;
                             setTimeout(function() {
-    if (window._aistudioScriptInjected) return;
-    window._aistudioScriptInjected = true;
 
                 function logDebug(msg) {
                     if (typeof AndroidBridge !== 'undefined' && AndroidBridge.logDebug) {
@@ -484,7 +479,7 @@ object SiteScripts {
                 
                 // SEND SERVERS IF FOUND
                 if (serverItems.length > 0) {
-                    clearInterval(intervalId);
+                    clearInterval(window._aistudioIntervalId);
                     // Filter duplicates
                     var finalItems = [];
                     for(var i=0; i<serverItems.length; i++){
@@ -582,8 +577,6 @@ object SiteScripts {
                                 window._isNavigating = true;
                                 targetResult.click();
                                 setTimeout(function() {
-    if (window._aistudioScriptInjected) return;
-    window._aistudioScriptInjected = true;
 
                 function logDebug(msg) {
                     if (typeof AndroidBridge !== 'undefined' && AndroidBridge.logDebug) {
@@ -608,7 +601,7 @@ object SiteScripts {
                 
                 var iframe = document.querySelector('iframe');
                 if (iframe && iframe.src && !iframe.src.includes('cloudflare') && !iframe.src.includes('facebook') && !iframe.src.includes('twitter')) {
-                    clearInterval(intervalId);
+                    clearInterval(window._aistudioIntervalId);
                     if (typeof AndroidBridge !== 'undefined') {
                         AndroidBridge.sendServersV2(JSON.stringify([{name: "السيرفر الرئيسي", link: iframe.src}]), window.location.href);
                     }
@@ -621,7 +614,7 @@ object SiteScripts {
                     window._failCount = (window._failCount || 0) + 1;
                     var maxFails = (loc.includes('?s=') || loc.includes('search') || loc.includes('query=') || loc.includes('keywords=')) ? 15 : 25; // wait ~20-35 seconds
                     if (window._failCount >= maxFails) { 
-                        clearInterval(intervalId);
+                        clearInterval(window._aistudioIntervalId);
                         if (typeof AndroidBridge !== 'undefined') AndroidBridge.sendFailed();
                     }
                 }
@@ -633,8 +626,7 @@ object SiteScripts {
     fun getScriptForVideoExtractor(url: String, targetServerId: String? = null): String {
         return """
         (function() {
-    if (window._aistudioScriptInjected) return;
-    window._aistudioScriptInjected = true;
+            if (window._aistudioIntervalId) clearInterval(window._aistudioIntervalId);
 
                 function logDebug(msg) {
                     if (typeof AndroidBridge !== 'undefined' && AndroidBridge.logDebug) {
@@ -642,9 +634,7 @@ object SiteScripts {
                     }
                 }
 
-            var intervalId = setInterval(function() {
-    if (window._aistudioScriptInjected) return;
-    window._aistudioScriptInjected = true;
+            window._aistudioIntervalId = setInterval(function() {
 
                 function logDebug(msg) {
                     if (typeof AndroidBridge !== 'undefined' && AndroidBridge.logDebug) {
@@ -730,7 +720,7 @@ object SiteScripts {
                 var video = document.querySelector('video');
                 if (video && video.src && !video.src.startsWith('blob:')) {
                     if (typeof AndroidBridge !== 'undefined') AndroidBridge.sendVideoUrl(video.src);
-                    clearInterval(intervalId);
+                    clearInterval(window._aistudioIntervalId);
                     return;
                 }
                 
@@ -738,7 +728,7 @@ object SiteScripts {
                 for (var i = 0; i < sources.length; i++) {
                     if (sources[i].src && !sources[i].src.startsWith('blob:')) {
                         if (typeof AndroidBridge !== 'undefined') AndroidBridge.sendVideoUrl(sources[i].src);
-                        clearInterval(intervalId);
+                        clearInterval(window._aistudioIntervalId);
                         return;
                     }
                 }
@@ -749,7 +739,7 @@ object SiteScripts {
                 if (!(isCloudflare || cf) && document.readyState === 'complete' && !window._serverClicked) {
                     window._failCount = (window._failCount || 0) + 1;
                     if (window._failCount >= 20) { 
-                        clearInterval(intervalId);
+                        clearInterval(window._aistudioIntervalId);
                         if (typeof AndroidBridge !== 'undefined') AndroidBridge.sendFailed();
                     }
                 }
