@@ -276,7 +276,13 @@ Dialog(
                 if (isLoading) {
                     if (isLoading && !isFailed) {
                         key(retryTrigger) {
-                            Box(modifier = if (bypassStatus == "CHECKING_CLOUDFLARE" || bypassStatus == "CLOUDFLARE") Modifier.fillMaxWidth().height(450.dp) else Modifier.size(1.dp).alpha(0f)) {
+                            Box(
+                                modifier = if (bypassStatus == "CLOUDFLARE" || bypassStatus == "CHECKING_CLOUDFLARE") 
+                                    Modifier.width(320.dp).height(150.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).alpha(if (bypassStatus == "CLOUDFLARE") 1f else 0.01f)
+                                else 
+                                    Modifier.size(1.dp).alpha(0f),
+                                contentAlignment = Alignment.Center
+                            ) {
                             AndroidView(
                                 modifier = Modifier.fillMaxSize(),
                                 factory = { ctx ->
@@ -301,6 +307,11 @@ Dialog(
                                         
                                         addJavascriptInterface(object {
                                             private var lastFailedSiteIndex = -1
+                                            @android.webkit.JavascriptInterface
+fun logDebug(msg: String) {
+                                                android.util.Log.d("AISTUDIO_DEBUG", msg)
+                                            }
+                                            
                                             @android.webkit.JavascriptInterface
                                             fun sendBypassStatus(status: String) {
                                                 Handler(Looper.getMainLooper()).post {
@@ -374,7 +385,7 @@ Dialog(
                                         webChromeClient = object : android.webkit.WebChromeClient() {
                                             override fun onProgressChanged(view: WebView?, newProgress: Int) {
                                                 super.onProgressChanged(view, newProgress)
-                                                if (newProgress >= 70) {
+                                                if (newProgress >= 30) {
                                                     val autoPlayScript = com.example.ui.screens.player.SiteScripts.getScriptForSite(currentSiteName, isMovie, episode, title)
                                                     view?.evaluateJavascript(autoPlayScript, null)
                                                 }
@@ -382,6 +393,7 @@ Dialog(
                                         }
                                         webViewClient = object : WebViewClient() {
                                             override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+                                                view?.evaluateJavascript("window._aistudioScriptInjected = false;", null)
                                                 super.onPageStarted(view, url, favicon)
                                                 // Instantly hide WebView on navigation (e.g. after verifying CF)
                                                 Handler(Looper.getMainLooper()).post {
@@ -410,11 +422,7 @@ Dialog(
                                             
                                             override fun onPageFinished(view: WebView?, url: String?) {
                                                 super.onPageFinished(view, url)
-                                                // Wait a short moment to ensure DOM is ready, then inject
-                                                Handler(Looper.getMainLooper()).postDelayed({
-                                                    val autoPlayScript = com.example.ui.screens.player.SiteScripts.getScriptForSite(currentSiteName, isMovie, episode, title)
-                                                    view?.evaluateJavascript(autoPlayScript, null)
-                                                }, 1000)
+                                                // Injection is now handled efficiently by WebChromeClient at 70% progress
                                             }
                                         }
                                     }

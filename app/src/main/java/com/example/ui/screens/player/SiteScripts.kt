@@ -4,11 +4,30 @@ object SiteScripts {
     fun getScriptForSite(siteName: String, isMovie: Boolean, episode: Int, title: String): String {
         return """
         (function() {
+    if (window._aistudioScriptInjected) return;
+    window._aistudioScriptInjected = true;
+
+                function logDebug(msg) {
+                    if (typeof AndroidBridge !== 'undefined' && AndroidBridge.logDebug) {
+                        AndroidBridge.logDebug(msg);
+                    }
+                }
+
             var intervalId = setInterval(function() {
-                var isCloudflareTitle = document.title.includes('Just a moment') || document.title.includes('Cloudflare') || document.title.includes('Attention Required');
-                var bodyText = document.body ? document.body.innerText : "";
-                var isCloudflareText = bodyText.includes('Performing security verification') || bodyText.includes('protect against malicious bots') || bodyText.includes('verifies you are not a bot');
-                var isCloudflare = isCloudflareTitle || isCloudflareText;
+    if (window._aistudioScriptInjected) return;
+    window._aistudioScriptInjected = true;
+
+                function logDebug(msg) {
+                    if (typeof AndroidBridge !== 'undefined' && AndroidBridge.logDebug) {
+                        AndroidBridge.logDebug(msg);
+                    }
+                }
+
+                var title = document.title.toLowerCase();
+                var bodyText = document.body ? document.body.innerText.toLowerCase() : "";
+                var isCloudflare = title.includes('just a moment') || title.includes('cloudflare') || title.includes('attention required') || 
+                                   bodyText.includes('security verification') || bodyText.includes('malicious bots') || 
+                                   bodyText.includes('not a bot') || bodyText.includes('يتم التحقق') || bodyText.includes('cloudflare');
                 var cf = document.querySelector('.cf-turnstile-wrapper, #challenge-stage, #challenge-form, .mark-as-human, #trk_jschal_js, iframe[src*="challenges.cloudflare.com"]');
                 
                 if (isCloudflare || cf) {
@@ -125,6 +144,15 @@ object SiteScripts {
                         if (!window._animeatRetried) {
                             window._animeatRetried = true;
                             setTimeout(function() {
+    if (window._aistudioScriptInjected) return;
+    window._aistudioScriptInjected = true;
+
+                function logDebug(msg) {
+                    if (typeof AndroidBridge !== 'undefined' && AndroidBridge.logDebug) {
+                        AndroidBridge.logDebug(msg);
+                    }
+                }
+
                                 var retryVideo = document.querySelector('video');
                                 if (retryVideo) {
                                     var retryUrl = retryVideo.getAttribute('src');
@@ -487,7 +515,7 @@ object SiteScripts {
                     var words = normTarget.split(' ').filter(function(w){ return w.length > 1; });
                     
                     var allLinks = document.querySelectorAll('a');
-                    var results = [];
+                    var results = []; logDebug('Smart Matcher running. Original title: ' + originalTitle + ' Target: ' + normTarget + ' All links count: ' + allLinks.length);
                     for(var k=0; k<allLinks.length; k++){
                         var h = allLinks[k].href || "";
                         h = h.toLowerCase();
@@ -538,7 +566,7 @@ object SiteScripts {
                         }
                         
                         if (bestMatchCount >= Math.max(1, words.length)) {
-                            targetResult = bestMatchElement;
+                            targetResult = bestMatchElement; logDebug('Found best match: ' + targetResult.href + ' with score: ' + bestMatchCount);
                         }
                         
                         if (!targetResult && (loc.includes('?s=') || loc.includes('search') || loc.includes('query=') || loc.includes('keywords=') || loc.includes('?search_param='))) {
@@ -553,7 +581,16 @@ object SiteScripts {
                             if (!window._isNavigating) {
                                 window._isNavigating = true;
                                 targetResult.click();
-                                setTimeout(function() { window.location.href = targetResult.href; }, 500);
+                                setTimeout(function() {
+    if (window._aistudioScriptInjected) return;
+    window._aistudioScriptInjected = true;
+
+                function logDebug(msg) {
+                    if (typeof AndroidBridge !== 'undefined' && AndroidBridge.logDebug) {
+                        AndroidBridge.logDebug(msg);
+                    }
+                }
+ window.location.href = targetResult.href; }, 500);
                             }
                             return;
                         }
@@ -596,8 +633,30 @@ object SiteScripts {
     fun getScriptForVideoExtractor(url: String, targetServerId: String? = null): String {
         return """
         (function() {
+    if (window._aistudioScriptInjected) return;
+    window._aistudioScriptInjected = true;
+
+                function logDebug(msg) {
+                    if (typeof AndroidBridge !== 'undefined' && AndroidBridge.logDebug) {
+                        AndroidBridge.logDebug(msg);
+                    }
+                }
+
             var intervalId = setInterval(function() {
-                var isCloudflare = document.title.includes('Just a moment') || document.title.includes('Cloudflare') || document.title.includes('Attention Required');
+    if (window._aistudioScriptInjected) return;
+    window._aistudioScriptInjected = true;
+
+                function logDebug(msg) {
+                    if (typeof AndroidBridge !== 'undefined' && AndroidBridge.logDebug) {
+                        AndroidBridge.logDebug(msg);
+                    }
+                }
+
+                var title = document.title.toLowerCase();
+                var bodyText = document.body ? document.body.innerText.toLowerCase() : "";
+                var isCloudflare = title.includes('just a moment') || title.includes('cloudflare') || title.includes('attention required') || 
+                                   bodyText.includes('security verification') || bodyText.includes('malicious bots') || 
+                                   bodyText.includes('not a bot') || bodyText.includes('يتم التحقق') || bodyText.includes('cloudflare');
                 var cf = document.querySelector('.cf-turnstile-wrapper, #challenge-stage, #challenge-form, .mark-as-human, #trk_jschal_js, iframe[src*="challenges.cloudflare.com"]');
                 
                 if (isCloudflare || cf) {
