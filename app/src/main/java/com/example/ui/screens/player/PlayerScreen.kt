@@ -43,6 +43,8 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.WindowInsetsCompat
@@ -118,7 +120,17 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
     val trackSelector = remember { DefaultTrackSelector(context) }
 
     val exoPlayer = remember {
+        // Build ExoPlayer with cookies from WebView
+        val cookie = android.webkit.CookieManager.getInstance().getCookie(uiState.currentVideoUrl ?: "") ?: ""
+        val dataSourceFactory = DefaultHttpDataSource.Factory()
+            .setUserAgent("Mozilla/5.0 (Linux; Android 13; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Mobile Safari/537.36")
+        if (cookie.isNotEmpty()) {
+            dataSourceFactory.setDefaultRequestProperties(mapOf("Cookie" to cookie))
+        }
+        val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
+        
         ExoPlayer.Builder(context)
+            .setMediaSourceFactory(mediaSourceFactory)
             .setTrackSelector(trackSelector)
             .build().apply {
             addListener(object : Player.Listener {
@@ -161,8 +173,16 @@ fun PlayerScreen(mediaId: String, isMovie: Boolean, title: String, url: String? 
 
     LaunchedEffect(uiState.currentVideoUrl) {
         uiState.currentVideoUrl?.let { url ->
-            val mediaItem = MediaItem.fromUri(url)
-            exoPlayer.setMediaItem(mediaItem)
+            // We need to recreate the media source if the url changes to ensure new cookies are fetched
+            val cookie = android.webkit.CookieManager.getInstance().getCookie(url) ?: ""
+            val dataSourceFactory = DefaultHttpDataSource.Factory()
+                .setUserAgent("Mozilla/5.0 (Linux; Android 13; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Mobile Safari/537.36")
+            if (cookie.isNotEmpty()) {
+                dataSourceFactory.setDefaultRequestProperties(mapOf("Cookie" to cookie))
+            }
+            val mediaSource = DefaultMediaSourceFactory(dataSourceFactory).createMediaSource(MediaItem.fromUri(url))
+            
+            exoPlayer.setMediaSource(mediaSource)
             exoPlayer.prepare()
             if (!showInitialSelection) {
                 exoPlayer.playWhenReady = true

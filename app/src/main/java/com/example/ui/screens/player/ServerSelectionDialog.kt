@@ -281,6 +281,11 @@ Dialog(
                                 modifier = Modifier.fillMaxSize(),
                                 factory = { ctx ->
                                     WebView(ctx).apply {
+                                        // CLEAR PREVIOUS SESSION DATA TO FORCE RE-VERIFICATION
+                                        android.webkit.WebStorage.getInstance().deleteAllData()
+                                        android.webkit.CookieManager.getInstance().removeAllCookies(null)
+                                        android.webkit.CookieManager.getInstance().flush()
+                                        
                                         setLayerType(android.view.View.LAYER_TYPE_SOFTWARE, null)
                                         settings.apply {
                                             javaScriptEnabled = true

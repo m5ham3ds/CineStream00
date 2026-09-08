@@ -9,34 +9,31 @@ object SiteScripts {
                 var bodyText = document.body ? document.body.innerText : "";
                 var isCloudflareText = bodyText.includes('Performing security verification') || bodyText.includes('protect against malicious bots') || bodyText.includes('verifies you are not a bot');
                 var isCloudflare = isCloudflareTitle || isCloudflareText;
-                var cf = document.querySelector('.cf-turnstile-wrapper, #challenge-stage, #challenge-form, .mark-as-human, #trk_jschal_js');
+                var cf = document.querySelector('.cf-turnstile-wrapper, #challenge-stage, #challenge-form, .mark-as-human, #trk_jschal_js, iframe[src*="challenges.cloudflare.com"]');
                 
                 if (isCloudflare || cf) {
                     if (!window._cfCssInjected) {
                         window._cfCssInjected = true;
-                        var style = document.createElement('style');
-                        style.innerHTML = `
-                            body, html { background-color: #16161A !important; }
-                            body * { visibility: hidden !important; }
-                            #challenge-stage, #challenge-stage *, .cf-turnstile-wrapper, .cf-turnstile-wrapper *, #challenge-form, #challenge-form * { visibility: visible !important; }
-                            #challenge-stage, .cf-turnstile-wrapper, #challenge-form { 
-                                position: fixed !important; 
-                                top: 50% !important; 
-                                left: 50% !important; 
-                                transform: translate(-50%, -50%) !important; 
-                                z-index: 999999 !important; 
-                                margin: 0 !important;
-                                padding: 0 !important;
+                        var overlay = document.createElement('div');
+                        overlay.id = 'aistudio-cf-overlay';
+                        overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background-color:#16161A;z-index:9999998;';
+                        document.body.appendChild(overlay);
+                        
+                        if (cf) {
+                            cf.style.position = 'fixed';
+                            cf.style.top = '50%';
+                            cf.style.left = '50%';
+                            cf.style.transform = 'translate(-50%, -50%)';
+                            cf.style.zIndex = '9999999';
+                            cf.style.visibility = 'visible';
+                            if (cf.parentElement && cf.parentElement !== document.body) {
+                                cf.parentElement.style.position = 'fixed';
+                                cf.parentElement.style.top = '50%';
+                                cf.parentElement.style.left = '50%';
+                                cf.parentElement.style.transform = 'translate(-50%, -50%)';
+                                cf.parentElement.style.zIndex = '9999999';
+                                cf.parentElement.style.visibility = 'visible';
                             }
-                        `;
-                        document.head.appendChild(style);
-                        // Also try to find if it's nested
-                        if (cf && cf.parentElement && cf.parentElement !== document.body) {
-                            cf.parentElement.style.display = 'block';
-                            cf.parentElement.style.position = 'absolute';
-                            cf.parentElement.style.top = '50%';
-                            cf.parentElement.style.left = '50%';
-                            cf.parentElement.style.transform = 'translate(-50%, -50%)';
                         }
                     }
                     if (typeof AndroidBridge !== 'undefined') AndroidBridge.sendBypassStatus("CLOUDFLARE");
@@ -600,37 +597,37 @@ object SiteScripts {
         (function() {
             var intervalId = setInterval(function() {
                 var isCloudflare = document.title.includes('Just a moment') || document.title.includes('Cloudflare') || document.title.includes('Attention Required');
-                var cf = document.querySelector('.cf-turnstile-wrapper, #challenge-stage, #challenge-form, .mark-as-human, #trk_jschal_js');
+                var cf = document.querySelector('.cf-turnstile-wrapper, #challenge-stage, #challenge-form, .mark-as-human, #trk_jschal_js, iframe[src*="challenges.cloudflare.com"]');
                 
                 if (isCloudflare || cf) {
                     if (!window._cfCssInjected) {
                         window._cfCssInjected = true;
-                        var style = document.createElement('style');
-                        style.innerHTML = `
-                            body, html { background-color: #16161A !important; }
-                            body * { visibility: hidden !important; }
-                            #challenge-stage, #challenge-stage *, .cf-turnstile-wrapper, .cf-turnstile-wrapper *, #challenge-form, #challenge-form * { visibility: visible !important; }
-                            #challenge-stage, .cf-turnstile-wrapper, #challenge-form { 
-                                position: fixed !important; 
-                                top: 50% !important; 
-                                left: 50% !important; 
-                                transform: translate(-50%, -50%) !important; 
-                                z-index: 999999 !important; 
-                                margin: 0 !important;
-                                padding: 0 !important;
+                        var overlay = document.createElement('div');
+                        overlay.id = 'aistudio-cf-overlay';
+                        overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background-color:#16161A;z-index:9999998;';
+                        document.body.appendChild(overlay);
+                        
+                        if (cf) {
+                            cf.style.position = 'fixed';
+                            cf.style.top = '50%';
+                            cf.style.left = '50%';
+                            cf.style.transform = 'translate(-50%, -50%)';
+                            cf.style.zIndex = '9999999';
+                            cf.style.visibility = 'visible';
+                            if (cf.parentElement && cf.parentElement !== document.body) {
+                                cf.parentElement.style.position = 'fixed';
+                                cf.parentElement.style.top = '50%';
+                                cf.parentElement.style.left = '50%';
+                                cf.parentElement.style.transform = 'translate(-50%, -50%)';
+                                cf.parentElement.style.zIndex = '9999999';
+                                cf.parentElement.style.visibility = 'visible';
                             }
-                        `;
-                        document.head.appendChild(style);
-                        // Also try to find if it's nested
-                        if (cf && cf.parentElement && cf.parentElement !== document.body) {
-                            cf.parentElement.style.display = 'block';
-                            cf.parentElement.style.position = 'absolute';
-                            cf.parentElement.style.top = '50%';
-                            cf.parentElement.style.left = '50%';
-                            cf.parentElement.style.transform = 'translate(-50%, -50%)';
                         }
                     }
+                    if (typeof AndroidBridge !== 'undefined') AndroidBridge.sendBypassStatus("CLOUDFLARE");
                     return;
+                } else {
+                    if (typeof AndroidBridge !== 'undefined') AndroidBridge.sendBypassStatus("NORMAL");
                 }
                 
                 var targetId = "${targetServerId ?: ""}";
