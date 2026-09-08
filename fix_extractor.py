@@ -1,35 +1,41 @@
-with open("app/src/main/java/com/example/ui/screens/player/SiteScripts.kt", "r") as f:
-    lines = f.readlines()
+import re
 
-new_lines = []
-skip = False
-for line in lines:
-    if "if (!isCloudflare && document.readyState === 'complete') {" in line and new_lines and 'trimIndent' in new_lines[-1]:
-        skip = True
-    if skip and line.strip() == "}":
-        skip = False
-        continue
-    if skip:
-        continue
-    new_lines.append(line)
+with open("app/src/main/java/com/example/ui/screens/player/VideoExtractor.kt", "r") as f:
+    content = f.read()
 
-# Now insert it at the correct place. Look for localPlay.click()
-for i, line in enumerate(new_lines):
-    if "if (localPlay) localPlay.click();" in line:
-        insert_idx = i + 1
-        break
+pattern = re.compile(r'override fun onPageFinished\(view: WebView, url: String\) \{.*?(?=\}\n\s*\}\n\s*\})', re.DOTALL)
 
-fail_logic = """
-                if (!isCloudflare && document.readyState === 'complete') {
-                    window._failCount = (window._failCount || 0) + 1;
-                    if (window._failCount >= 4) { 
-                        clearInterval(intervalId);
-                        if (typeof AndroidBridge !== 'undefined') AndroidBridge.sendFailed();
-                    }
-                }
-"""
+new_code = """override fun onPageFinished(view: WebView, url: String) {
+                        super.onPageFinished(view, url)
+                        if (isCanceled) return
+                        
+                        fun injectScript() {
+                            if (isCanceled || found) return
+                            if (com.example.ui.screens.player.ServerStateStore.extractedServers.isEmpty()) {
+                                val siteScript = com.example.ui.screens.player.SiteScripts.getScriptForSite(
+                                    website, 
+                                    isMovie, 
+                                    episode, 
+                                    title
+                                )
+                                view.evaluateJavascript(siteScript, null)
+                            } else {
+                                val autoPlayScript = com.example.ui.screens.player.SiteScripts.getScriptForVideoExtractor(url, targetServerId)
+                                view.evaluateJavascript(autoPlayScript, null)
+                            }
+                        }
+                        
+                        injectScript()
+                        
+                        // Hybrid polling: keep injecting every 1.5s for up to 15s in case of AJAX loading
+                        for (i in 1..10) {
+                            Handler(Looper.getMainLooper()).postDelayed({
+                                injectScript()
+                            }, i * 1500L)
+                        }
+                    """
 
-new_lines.insert(insert_idx, fail_logic)
+content = pattern.sub(new_code, content)
 
-with open("app/src/main/java/com/example/ui/screens/player/SiteScripts.kt", "w") as f:
-    f.writelines(new_lines)
+with open("app/src/main/java/com/example/ui/screens/player/VideoExtractor.kt", "w") as f:
+    f.write(content)
