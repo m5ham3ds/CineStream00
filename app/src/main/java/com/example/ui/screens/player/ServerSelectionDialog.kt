@@ -153,128 +153,6 @@ fun ServerSelectionDialog(
         else -> "https://$currentSiteName/?s=$encodedPlusTitleOriginal"
     }
 
-    if (isLoading && !isFailed) {
-        key(retryTrigger) {
-            AndroidView(
-            modifier = Modifier.size(1.dp).alpha(0.01f),
-            factory = { ctx ->
-                WebView(ctx).apply {
-                    setLayerType(android.view.View.LAYER_TYPE_SOFTWARE, null)
-                    settings.apply {
-                        javaScriptEnabled = true
-                        domStorageEnabled = true
-                        databaseEnabled = true
-                        javaScriptCanOpenWindowsAutomatically = true
-                        userAgentString = "Mozilla/5.0 (Linux; Android 13; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Mobile Safari/537.36"
-                        mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                    }
-                    val cookieManager = CookieManager.getInstance()
-                    cookieManager.setAcceptCookie(true)
-                    cookieManager.setAcceptThirdPartyCookies(this, true)
-                    
-                    addJavascriptInterface(object {
-                        private var lastFailedSiteIndex = -1
-
-                        @android.webkit.JavascriptInterface
-                        fun sendBypassStatus(status: String) {
-                            Handler(Looper.getMainLooper()).post {
-                                if (status == "NORMAL" && (bypassStatus == "CHECKING_CLOUDFLARE" || bypassStatus == "CLOUDFLARE")) {
-                                    bypassStatus = "VERIFIED"
-                                    Handler(Looper.getMainLooper()).postDelayed({
-                                        if (bypassStatus == "VERIFIED") bypassStatus = "NORMAL"
-                                    }, 1500)
-                                } else if (status == "CLOUDFLARE") {
-                                    bypassStatus = "CLOUDFLARE"
-                                }
-                            }
-                        }
-
-                        @android.webkit.JavascriptInterface
-                        fun sendFailed() {
-                            Handler(Looper.getMainLooper()).post {
-                                if (lastFailedSiteIndex != currentSiteIndex) {
-                                    lastFailedSiteIndex = currentSiteIndex
-                                    currentSiteIndex++
-                                }
-                            }
-                        }
-
-                        @android.webkit.JavascriptInterface
-                        fun sendServersV2(serversJson: String, url: String) {
-                            try {
-                                val serversData = org.json.JSONArray(serversJson)
-                                val serversNames = mutableListOf<String>()
-                                val serversMap = mutableMapOf<String, String>()
-                                val serversIds = mutableMapOf<String, String>()
-                                
-                                for (i in 0 until serversData.length()) {
-                                    val item = serversData.getJSONObject(i)
-                                    val name = item.getString("name")
-                                    val link = if (item.has("link")) item.getString("link") else ""
-                                    val id = if (item.has("id")) item.getString("id") else ""
-                                    serversNames.add(name)
-                                    serversMap[name] = link
-                                    serversIds[name] = id
-                                }
-                                
-                                if (serversNames.isNotEmpty() && extractedServers.isEmpty()) {
-                                    Handler(Looper.getMainLooper()).post {
-                                        finalWatchUrl = url
-                                        extractedServers = serversNames
-                                        extractedServerLinks = serversMap
-                                        com.example.ui.screens.player.ServerStateStore.extractedServers = serversNames
-                                        com.example.ui.screens.player.ServerStateStore.extractedServerLinks = serversMap
-                                        com.example.ui.screens.player.ServerStateStore.extractedServerIds = serversIds
-                                        isLoading = false
-                                    }
-                                }
-                            } catch (e: Exception) { e.printStackTrace() }
-                        }
-                        
-                        @android.webkit.JavascriptInterface
-                        fun sendServers(serversStr: String, url: String) {
-                            val servers = serversStr.split(",").filter { it.isNotBlank() }.distinct()
-                            if (servers.isNotEmpty() && extractedServers.isEmpty()) {
-                                Handler(Looper.getMainLooper()).post {
-                                    finalWatchUrl = url
-                                    extractedServers = servers
-                                    val tempMap = servers.associateWith { "" }
-                                    com.example.ui.screens.player.ServerStateStore.extractedServers = servers
-                                    com.example.ui.screens.player.ServerStateStore.extractedServerLinks = tempMap
-                                    extractedServerLinks = tempMap
-                                    isLoading = false
-                                    
-                                    
-                                }
-                            }
-                        }
-                    }, "AndroidBridge")
-
-                    webViewClient = object : com.ead.lib.cloudflare_bypass.BypassClient() {
-                        override fun onReceivedSslError(view: WebView?, handler: android.webkit.SslErrorHandler?, error: android.net.http.SslError?) {
-                            handler?.proceed()
-                        }
-
-                        override fun onPageFinishedByPassed(view: WebView?, url: String?) {
-                            super.onPageFinishedByPassed(view, url)
-                            
-                            val isMovieStr = if (isMovie) "true" else "false"
-                            val autoPlayScript = com.example.ui.screens.player.SiteScripts.getScriptForSite(currentSiteName, isMovie, episode, title)
-                            view?.evaluateJavascript(autoPlayScript, null)
-                        }
-                    }
-                }
-            },
-            update = { webView ->
-                val lastUrl = webView.getTag(com.example.R.id.tag_url) as? String
-                if (lastUrl != searchUrl) {
-                    webView.setTag(com.example.R.id.tag_url, searchUrl)
-                    webView.loadUrl(searchUrl)
-                }
-            }
-        )
-        }
-    }
 
 Dialog(
         onDismissRequest = {
@@ -395,94 +273,206 @@ Dialog(
                 Spacer(modifier = Modifier.height(32.dp))
 
                 if (isLoading) {
-                    // Loading State matching design
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.size(140.dp)
-                    ) {
-                        // Faint outer rings
-                        androidx.compose.foundation.Canvas(modifier = Modifier.size(140.dp)) {
-                            drawCircle(
-                                color = Color(0x15FF1111),
-                                radius = size.minDimension / 2,
-                                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx())
+                    if (isLoading && !isFailed) {
+                        key(retryTrigger) {
+                            AndroidView(
+                                modifier = if (isCloudflare) Modifier.fillMaxWidth().height(450.dp) else Modifier.size(1.dp).alpha(0.01f),
+                                factory = { ctx ->
+                                    WebView(ctx).apply {
+                                        setLayerType(android.view.View.LAYER_TYPE_SOFTWARE, null)
+                                        settings.apply {
+                                            javaScriptEnabled = true
+                                            domStorageEnabled = true
+                                            databaseEnabled = true
+                                            javaScriptCanOpenWindowsAutomatically = true
+                                            userAgentString = "Mozilla/5.0 (Linux; Android 13; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Mobile Safari/537.36"
+                                            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                                        }
+                                        val cookieManager = CookieManager.getInstance()
+                                        cookieManager.setAcceptCookie(true)
+                                        cookieManager.setAcceptThirdPartyCookies(this, true)
+                                        
+                                        addJavascriptInterface(object {
+                                            private var lastFailedSiteIndex = -1
+                                            @android.webkit.JavascriptInterface
+                                            fun sendBypassStatus(status: String) {
+                                                Handler(Looper.getMainLooper()).post {
+                                                    if (status == "NORMAL" && (bypassStatus == "CHECKING_CLOUDFLARE" || bypassStatus == "CLOUDFLARE")) {
+                                                        bypassStatus = "VERIFIED"
+                                                        Handler(Looper.getMainLooper()).postDelayed({
+                                                            if (bypassStatus == "VERIFIED") bypassStatus = "NORMAL"
+                                                        }, 1500)
+                                                    } else if (status == "CLOUDFLARE") {
+                                                        bypassStatus = "CLOUDFLARE"
+                                                    }
+                                                }
+                                            }
+                                            @android.webkit.JavascriptInterface
+                                            fun sendFailed() {
+                                                Handler(Looper.getMainLooper()).post {
+                                                    if (lastFailedSiteIndex != currentSiteIndex) {
+                                                        lastFailedSiteIndex = currentSiteIndex
+                                                        currentSiteIndex++
+                                                    }
+                                                }
+                                            }
+                                            @android.webkit.JavascriptInterface
+                                            fun sendServersV2(serversJson: String, url: String) {
+                                                try {
+                                                    val serversData = org.json.JSONArray(serversJson)
+                                                    val serversNames = mutableListOf<String>()
+                                                    val serversMap = mutableMapOf<String, String>()
+                                                    val serversIds = mutableMapOf<String, String>()
+                                                    
+                                                    for (i in 0 until serversData.length()) {
+                                                        val item = serversData.getJSONObject(i)
+                                                        val name = item.getString("name")
+                                                        val link = if (item.has("link")) item.getString("link") else ""
+                                                        val id = if (item.has("id")) item.getString("id") else ""
+                                                        serversNames.add(name)
+                                                        serversMap[name] = link
+                                                        serversIds[name] = id
+                                                    }
+                                                    
+                                                    if (serversNames.isNotEmpty() && extractedServers.isEmpty()) {
+                                                        Handler(Looper.getMainLooper()).post {
+                                                            finalWatchUrl = url
+                                                            extractedServers = serversNames
+                                                            extractedServerLinks = serversMap
+                                                            com.example.ui.screens.player.ServerStateStore.extractedServers = serversNames
+                                                            com.example.ui.screens.player.ServerStateStore.extractedServerLinks = serversMap
+                                                            com.example.ui.screens.player.ServerStateStore.extractedServerIds = serversIds
+                                                            isLoading = false
+                                                        }
+                                                    }
+                                                } catch (e: Exception) { e.printStackTrace() }
+                                            }
+                                            
+                                            @android.webkit.JavascriptInterface
+                                            fun sendServers(serversStr: String, url: String) {
+                                                val servers = serversStr.split(",").filter { it.isNotBlank() }.distinct()
+                                                if (servers.isNotEmpty() && extractedServers.isEmpty()) {
+                                                    Handler(Looper.getMainLooper()).post {
+                                                        finalWatchUrl = url
+                                                        extractedServers = servers
+                                                        val tempMap = servers.associateWith { "" }
+                                                        com.example.ui.screens.player.ServerStateStore.extractedServers = servers
+                                                        com.example.ui.screens.player.ServerStateStore.extractedServerLinks = tempMap
+                                                        extractedServerLinks = tempMap
+                                                        isLoading = false
+                                                    }
+                                                }
+                                            }
+                                        }, "AndroidBridge")
+                                        webViewClient = object : WebViewClient() {
+                                            override fun onReceivedSslError(view: WebView?, handler: android.webkit.SslErrorHandler?, error: android.net.http.SslError?) {
+                                                handler?.proceed()
+                                            }
+                                            
+                                            override fun onPageFinished(view: WebView?, url: String?) {
+                                                super.onPageFinished(view, url)
+                                                // Wait a short moment to ensure DOM is ready, then inject
+                                                val autoPlayScript = com.example.ui.screens.player.SiteScripts.getScriptForSite(currentSiteName, isMovie, episode, title)
+                                                view?.evaluateJavascript(autoPlayScript, null)
+                                            }
+                                        }
+                                    }
+                                },
+                                update = { webView ->
+                                    val lastUrl = webView.getTag(com.example.R.id.tag_url) as? String
+                                    if (lastUrl != searchUrl) {
+                                        webView.setTag(com.example.R.id.tag_url, searchUrl)
+                                        webView.loadUrl(searchUrl)
+                                    }
+                                }
                             )
-                            drawCircle(
-                                color = Color(0x25FF1111),
-                                radius = size.minDimension / 2 - 20f,
-                                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx())
+                        }
+                    }
+
+                    if (!isCloudflare) {
+                        // Loading State matching design
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.size(140.dp)
+                        ) {
+                            // Faint outer rings
+                            androidx.compose.foundation.Canvas(modifier = Modifier.size(140.dp)) {
+                                drawCircle(
+                                    color = Color(0x15FF1111),
+                                    radius = size.minDimension / 2,
+                                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx())
+                                )
+                                drawCircle(
+                                    color = Color(0x25FF1111),
+                                    radius = size.minDimension / 2 - 20f,
+                                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx())
+                                )
+                            }
+                            
+                            CircularProgressIndicator(
+                                color = activeColor,
+                                trackColor = Color(0xFF222225),
+                                modifier = Modifier.size(90.dp),
+                                strokeWidth = 6.dp
                             )
                         }
-                        
-                        CircularProgressIndicator(
-                            color = activeColor,
-                            trackColor = Color(0xFF222225),
-                            modifier = Modifier.size(90.dp),
-                            strokeWidth = 6.dp
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(32.dp))
-
-                    val statusMsg = if (isCloudflare) {
-                        androidx.compose.ui.text.buildAnnotatedString {
-                            withStyle(style = androidx.compose.ui.text.SpanStyle(color = Color.White)) { append("جاري التحديث ") }
-                            withStyle(style = androidx.compose.ui.text.SpanStyle(color = Color(0xFFFF1111))) { append("البيانات") }
+                        Spacer(modifier = Modifier.height(32.dp))
+                        val statusMsg = if (isCloudflare) {
+                            androidx.compose.ui.text.buildAnnotatedString {
+                                withStyle(style = androidx.compose.ui.text.SpanStyle(color = Color.White)) { append("جاري التحديث ") }
+                                withStyle(style = androidx.compose.ui.text.SpanStyle(color = Color(0xFFFF1111))) { append("البيانات") }
+                            }
+                        } else {
+                            androidx.compose.ui.text.buildAnnotatedString {
+                                withStyle(style = androidx.compose.ui.text.SpanStyle(color = Color.White)) { append("جاري البحث في ") }
+                                withStyle(style = androidx.compose.ui.text.SpanStyle(color = Color(0xFF00C853))) { append(currentSiteName) }
+                            }
                         }
-                    } else {
-                        androidx.compose.ui.text.buildAnnotatedString {
-                            withStyle(style = androidx.compose.ui.text.SpanStyle(color = Color.White)) { append("جاري البحث في ") }
-                            withStyle(style = androidx.compose.ui.text.SpanStyle(color = Color(0xFF00C853))) { append(currentSiteName) }
+                        Text(
+                            text = statusMsg,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "الرجاء الإنتظار، يتم جلب أحدث المعلومات من السيرفرات.",
+                            color = Color.Gray,
+                            style = MaterialTheme.typography.bodySmall,
+                            textAlign = TextAlign.Center,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(modifier = Modifier.height(32.dp))
+                        // Badges Row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            StatusBadge(
+                                text = "جاري التحقق",
+                                icon = androidx.compose.material.icons.Icons.Outlined.Storage,
+                                statusColor = activeColor
+                            )
+                            StatusBadge(
+                                text = "جلب السيرفرات",
+                                icon = androidx.compose.material.icons.Icons.Outlined.Sync,
+                                statusColor = activeColor
+                            )
+                            StatusBadge(
+                                text = "اتصال آمن",
+                                icon = androidx.compose.material.icons.Icons.Outlined.Security,
+                                statusColor = if (isVerified || isNormal) Color(0xFF00C853) else Color.Gray
+                            )
                         }
-                    }
-
-                    Text(
-                        text = statusMsg,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center,
-                        maxLines = 1,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "الرجاء الإنتظار، يتم جلب أحدث المعلومات من السيرفرات.",
-                        color = Color.Gray,
-                        style = MaterialTheme.typography.bodySmall,
-                        textAlign = TextAlign.Center,
-                        maxLines = 1,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    Spacer(modifier = Modifier.height(32.dp))
-
-                    // Badges Row
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        StatusBadge(
-                            text = "جاري التحقق",
-                            icon = androidx.compose.material.icons.Icons.Outlined.Storage,
-                            statusColor = activeColor
-                        )
-                        StatusBadge(
-                            text = "جلب السيرفرات",
-                            icon = androidx.compose.material.icons.Icons.Outlined.Sync,
-                            statusColor = activeColor
-                        )
-                        StatusBadge(
-                            text = "اتصال آمن",
-                            icon = androidx.compose.material.icons.Icons.Outlined.Security,
-                            statusColor = if (isVerified || isNormal) Color(0xFF00C853) else Color.Gray
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
+                        Spacer(modifier = Modifier.height(24.dp))
+                    } // End if (!isCloudflare)
+                    
                     // Bottom progress line
                     val progress = (currentSiteIndex.toFloat() / prioritySites.size.coerceAtLeast(1).toFloat()).coerceIn(0f, 1f)
                     Box(
@@ -499,7 +489,6 @@ Dialog(
                                 .background(activeColor)
                         )
                     }
-
                 } else if (isFailed) {
                     Text(
                         text = "عذراً، لم نتمكن من العثور على سيرفرات تعمل لهذا العمل في جميع المواقع المدعومة.",

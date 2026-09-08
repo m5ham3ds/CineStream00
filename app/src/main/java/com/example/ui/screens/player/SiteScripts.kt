@@ -9,7 +9,7 @@ object SiteScripts {
                 var bodyText = document.body ? document.body.innerText : "";
                 var isCloudflareText = bodyText.includes('Performing security verification') || bodyText.includes('protect against malicious bots') || bodyText.includes('verifies you are not a bot');
                 var isCloudflare = isCloudflareTitle || isCloudflareText;
-                var cf = document.querySelector('.cf-turnstile-wrapper, #challenge-stage, input[type="checkbox"], #challenge-form, .mark-as-human');
+                var cf = document.querySelector('.cf-turnstile-wrapper, #challenge-stage, #challenge-form, .mark-as-human');
                 
                 if (isCloudflare || cf) {
                     if (typeof AndroidBridge !== 'undefined') AndroidBridge.sendBypassStatus("CLOUDFLARE");
@@ -567,7 +567,7 @@ object SiteScripts {
         (function() {
             var intervalId = setInterval(function() {
                 var isCloudflare = document.title.includes('Just a moment') || document.title.includes('Cloudflare') || document.title.includes('Attention Required');
-                var cf = document.querySelector('.cf-turnstile-wrapper, #challenge-stage, input[type="checkbox"], #challenge-form, .mark-as-human');
+                var cf = document.querySelector('.cf-turnstile-wrapper, #challenge-stage, #challenge-form, .mark-as-human');
                 if (cf) { cf.click(); return; }
                 
                 var targetId = "${targetServerId ?: ""}";
