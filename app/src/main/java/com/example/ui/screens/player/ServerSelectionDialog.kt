@@ -171,7 +171,7 @@ Dialog(
     ) {
         val isVerified = bypassStatus == "VERIFIED"
         val isNormal = bypassStatus == "NORMAL"
-        val isCloudflare = bypassStatus == "CLOUDFLARE" || bypassStatus == "CHECKING_CLOUDFLARE"
+        val isCloudflare = bypassStatus == "CLOUDFLARE"
 
         val activeColor = if (isVerified || isNormal) Color(0xFF00C853) else Color(0xFFFF1111)
 
@@ -367,6 +367,15 @@ Dialog(
                                             }
                                         }, "AndroidBridge")
                                         webViewClient = object : WebViewClient() {
+                                            override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+                                                super.onPageStarted(view, url, favicon)
+                                                // Instantly hide WebView on navigation (e.g. after verifying CF)
+                                                Handler(Looper.getMainLooper()).post {
+                                                    if (bypassStatus == "CLOUDFLARE") {
+                                                        bypassStatus = "CHECKING_CLOUDFLARE"
+                                                    }
+                                                }
+                                            }
                                             override fun onReceivedSslError(view: WebView?, handler: android.webkit.SslErrorHandler?, error: android.net.http.SslError?) {
                                                 handler?.proceed()
                                             }
