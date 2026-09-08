@@ -21,6 +21,65 @@ object SiteScripts {
                 
                 var serverItems = [];
                 var loc = window.location.href.toLowerCase();
+                // --- URL TRANSFORMATION LOGIC ---
+                var currentHref = window.location.href.toLowerCase();
+                
+                // 1. a.qfilm.tv, z1.almeshkah.net, uo.brstej.com
+                if ((currentHref.includes('a.qfilm.tv') || currentHref.includes('z1.almeshkah.net') || currentHref.includes('uo.brstej.com') || currentHref.includes('e.cimalight.co')) && currentHref.includes('watch.php?vid=')) {
+                    if (currentHref.includes('e.cimalight.co')) {
+                        // cimalight watch.php -> click the embed or video to get iframe url
+                        // handled by extractor below automatically
+                    } else {
+                        window.location.href = window.location.href.replace('watch.php', 'play.php');
+                        return;
+                    }
+                }
+                // 2. laaroza.space
+                if (currentHref.includes('laaroza.') && currentHref.includes('video.php?vid=')) {
+                    window.location.href = window.location.href.replace('video.php', 'play.php');
+                    return;
+                }
+                // 3. arabseed, topcinema, arabseed-tv
+                if ((currentHref.includes('arabseed.wine') || currentHref.includes('topcinema.io') || currentHref.includes('arabseed-tv.com')) 
+                    && !currentHref.includes('?s=') && !currentHref.includes('search') && !currentHref.includes('/watch') && !currentHref.includes('/page/')) {
+                    // Check if it's the info page
+                    var watchLink = document.querySelector('a.watchBtn, a.btn-watch, a[href*="/watch"]');
+                    if (watchLink && watchLink.href.includes('/watch')) {
+                        window.location.href = watchLink.href;
+                        return;
+                    } else {
+                        // Append /watch/ to the URL
+                        var newUrl = window.location.href;
+                        if (!newUrl.endsWith('/')) newUrl += '/';
+                        window.location.href = newUrl + 'watch/';
+                        return;
+                    }
+                }
+                // 4. animeblkom.net
+                if (currentHref.includes('animeblkom.net/anime/')) {
+                    window.location.href = window.location.href.replace('/anime/', '/watch/') + '/0';
+                    return;
+                }
+                // 5. stardima.com
+                if (currentHref.includes('stardima.com/tvshow/') && !currentHref.includes('/play/')) {
+                    var episodeLinks = document.querySelectorAll('a[href*="/play/"]');
+                    if (episodeLinks.length > 0) {
+                        var targetLink = episodeLinks[0];
+                        if (!${isMovie}) {
+                            var targetEpStr = "حلقة ${episode}";
+                            for (var i = 0; i < episodeLinks.length; i++) {
+                                var txt = episodeLinks[i].innerText || "";
+                                if (txt.includes(targetEpStr) || txt.includes(targetEpStr.replace('حلقة ', 'الحلقة '))) {
+                                    targetLink = episodeLinks[i];
+                                    break;
+                                }
+                            }
+                        }
+                        window.location.href = targetLink.href;
+                        return;
+                    }
+                }
+
                 
                 // --- SITE SPECIFIC LOGIC ---
                 if ("$siteName" === "animeat.net") {
@@ -384,40 +443,83 @@ object SiteScripts {
                 }
                 
                 // --- SMART SEARCH RESULT MATCHER ---
-                if (serverItems.length === 0 && (!loc.includes('watch') && !loc.includes('episode') && !loc.includes('movie'))) {
-                    var searchTarget = "${title.lowercase().replace("'", "").replace("\"", "")}";
-                    var results = document.querySelectorAll('a.postBlock, section.main-section ul.posts-list li.movieItem a, .movieItem a, .postBlock a, ul.pm-ul-browse-videos li a, ul.movie__blocks__ul li a.movie__block, ul.series__ul li a, div.media-block a.image, div.owl-animes a.overlay, div.embla__slide a, .movie-card a, .anime-card a, .item-list a, article a, .post a, .thumb a, .Blocks-Area a.Block-Item, .ep-card a, .episode-card a, .box-item a, .hover-content a, .anime-list-content a, .half-post a, .Block-Item, a.header-featured-item, a.movie-item__link, .pm-video-thumb a, .lucodeia-slider-slide-item, a.overlay, a.absolute.inset-0, .GridItem a');
+                if (serverItems.length === 0 && (!loc.includes('watch') && !loc.includes('episode') && !loc.includes('movie') && !loc.includes('play.php') && !loc.includes('video.php') && !loc.includes('/anime/') && !loc.includes('tvshow'))) {
+                    var originalTitle = "${title.lowercase().replace("'", "").replace("\"", "")}";
+                    var isSeries = originalTitle.includes(' - s') && originalTitle.includes('e');
+                    var baseTitle = originalTitle;
+                    var epNum = "";
+                    if (isSeries) {
+                        var parts = originalTitle.split(' - s');
+                        baseTitle = parts[0].trim();
+                        var rightSide = parts[1] || "";
+                        if (rightSide.includes('e')) {
+                            epNum = rightSide.split('e')[1].trim();
+                        }
+                    }
+                    var searchTarget = baseTitle;
+                    var normTarget = searchTarget.toLowerCase().replace(/[^a-z0-9]/gi, ' ').replace(/\s+/g, ' ').trim();
+                    var words = normTarget.split(' ').filter(function(w){ return w.length > 1; });
                     
-                    if (results && results.length > 0) {
+                    var allLinks = document.querySelectorAll('a');
+                    var results = [];
+                    for(var k=0; k<allLinks.length; k++){
+                        var h = allLinks[k].href || "";
+                        h = h.toLowerCase();
+                        if(h && h.startsWith('http') && !h.includes('login') && !h.includes('register') && !h.includes('?s=') && !h.includes('search') && !h.includes('keywords=') && !h.includes('category')){
+                            results.push(allLinks[k]);
+                        }
+                    }
+                    
+                    if (results.length > 0) {
                         var targetResult = null;
+                        var bestMatchCount = 0;
+                        var bestMatchElement = null;
                         for (var i = 0; i < results.length; i++) {
                             var linkText = (results[i].innerText || '') + " " + (results[i].getAttribute('title') || '');
-                            linkText = linkText.toLowerCase().replace(/[^a-z0-9 ]/g, ''); 
-                            var normTarget = searchTarget.toLowerCase().replace(/[^a-z0-9 ]/g, '');
-                            if (linkText.includes(normTarget)) { targetResult = results[i]; break; }
-                        }
-                        if (!targetResult) {
-                            var words = searchTarget.toLowerCase().replace(/[^a-z0-9 ]/g, '').split(' ').filter(function(w){ return w.length > 1; });
-                            var bestMatchCount = 0;
-                            var bestMatchElement = null;
-                            for (var i = 0; i < results.length; i++) {
-                                var linkText = (results[i].innerText || '') + " " + (results[i].getAttribute('title') || '');
-                                linkText = linkText.toLowerCase().replace(/[^a-z0-9 ]/g, '');
-                                var matchCount = 0;
+                            var linkHref = results[i].href || '';
+                            linkText = linkText.toLowerCase().replace(/[^a-z0-9]/gi, ' ').replace(/\s+/g, ' ').trim();
+                            
+                            var matchCount = 0;
+                            // Exact title match gets huge bonus
+                            if (linkText.includes(normTarget)) {
+                                matchCount += 20;
+                            } else {
                                 for(var w = 0; w < words.length; w++) {
                                     if (linkText.includes(words[w])) matchCount++;
                                 }
-                                if (matchCount > bestMatchCount) {
-                                    bestMatchCount = matchCount;
-                                    bestMatchElement = results[i];
+                            }
+                            
+                            // If it contains an image, it's more likely a media card
+                            if (results[i].querySelector('img')) {
+                                matchCount += 2;
+                            }
+                            
+                            if (isSeries && epNum) {
+                                if (linkText.includes(epNum)) {
+                                    matchCount += 10;
+                                } else if (linkHref.includes(epNum)) {
+                                    matchCount += 5;
+                                } else if (linkHref.includes('season') || linkHref.includes('series') || linkHref.includes('episode')) {
+                                    matchCount += 3;
                                 }
                             }
-                            if (words.length > 0 && bestMatchCount >= Math.max(1, words.length - 1)) {
-                                targetResult = bestMatchElement;
+                            
+                            if (matchCount > bestMatchCount) {
+                                bestMatchCount = matchCount;
+                                bestMatchElement = results[i];
                             }
                         }
+                        
+                        if (bestMatchCount >= Math.max(1, words.length)) {
+                            targetResult = bestMatchElement;
+                        }
+                        
                         if (!targetResult && (loc.includes('?s=') || loc.includes('search') || loc.includes('query=') || loc.includes('keywords=') || loc.includes('?search_param='))) {
-                            targetResult = results[0];
+                            // fallback
+                            var oldResults = document.querySelectorAll('a.postBlock, section.main-section ul.posts-list li.movieItem a, .movieItem a, .postBlock a, ul.pm-ul-browse-videos li a, ul.movie__blocks__ul li a.movie__block, ul.series__ul li a, div.media-block a.image, div.owl-animes a.overlay, div.embla__slide a, .movie-card a, .anime-card a, .item-list a, article a, .post a, .thumb a, .Blocks-Area a.Block-Item, .ep-card a, .episode-card a, .box-item a, .hover-content a, .anime-list-content a, .half-post a, .Block-Item, a.header-featured-item, a.movie-item__link, .pm-video-thumb a, .lucodeia-slider-slide-item, a.overlay, a.absolute.inset-0, .GridItem a');
+                            if(oldResults && oldResults.length > 0) {
+                                targetResult = oldResults[0];
+                            }
                         }
                         
                         if (targetResult) {

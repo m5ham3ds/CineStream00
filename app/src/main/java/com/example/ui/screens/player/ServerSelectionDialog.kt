@@ -95,33 +95,53 @@ fun ServerSelectionDialog(
         extractedServers = emptyList()
         finalWatchUrl = null
         
-        // Wait for up to 15 seconds, but check every 1 second if servers were found
+        // Wait for up to 30 iterations, but pause counting if we are doing Cloudflare bypass
         var waited = 0
-        while (waited < 15) {
+        while (waited < 30) {
             delay(1000)
-            waited++
+            if (bypassStatus != "CLOUDFLARE" && bypassStatus != "CHECKING_CLOUDFLARE") {
+                waited++
+            }
             if (extractedServers.isNotEmpty()) {
                 // Servers found! We can stop waiting.
                 return@LaunchedEffect
             }
+            if (isFailed) {
+                return@LaunchedEffect
+            }
         }
         
-        // If we waited 30 seconds and still no servers, move to the next site
+        // If we timed out and still no servers, move to the next site
         if (extractedServers.isEmpty()) {
             currentSiteIndex++
         }
     }
 
-    val encodedTitle = URLEncoder.encode(title, "UTF-8")
-    val encodedPlusTitle = URLEncoder.encode(title, "UTF-8").replace("%20", "+")
+    val baseTitle = if (title.contains(" - S") && title.contains("E")) {
+        title.substringBefore(" - S").trim()
+    } else {
+        title
+    }
+    val cleanTitle = baseTitle.replace(Regex("[^a-zA-Z0-9\\s]"), " ").replace(Regex("\\s+"), " ").trim()
+    // For sites like tv10.egydead.live we actually need the original encoded title, not the cleaned one!
+    // Example: tv10.egydead.live/?s=Spider-Man%3A+Brand+New+Day
+    val encodedTitleOriginal = URLEncoder.encode(baseTitle, "UTF-8")
+    val encodedPlusTitleOriginal = URLEncoder.encode(baseTitle, "UTF-8").replace("%20", "+")
+    val encodedTitle = URLEncoder.encode(cleanTitle, "UTF-8")
+    val encodedPlusTitle = URLEncoder.encode(cleanTitle, "UTF-8").replace("%20", "+")
+    
+    // For general sites we use original Title so we don't break their search (they handle symbols themselves)
+    // ONLY for specific sites that need cleaned titles (like tv10.egydead, etc) we use the cleaned version
     val searchUrl = when (currentSiteName) {
-        "witanime.you" -> "https://witanime.you/?search_param=animes&s=$encodedPlusTitle"
-        "w1.anime4up.rest" -> "https://w1.anime4up.rest/?s=$encodedTitle"
-        "animeblkom.net" -> "https://animeblkom.net/search?query=$encodedPlusTitle"
+        "witanime.you" -> "https://witanime.you/?search_param=animes&s=$encodedPlusTitleOriginal"
+        "w1.anime4up.rest" -> "https://w1.anime4up.rest/?s=$encodedTitleOriginal"
+        "animeblkom.net" -> "https://animeblkom.net/search?query=$encodedPlusTitleOriginal"
         "animeat.net" -> "https://animeat.net/"
         "arabanime.net" -> "https://www.arabanime.net/searchq"
-        "det.animerco.org" -> "https://det.animerco.org/?s=$encodedPlusTitle"
-        "vip.animeluxe.org" -> "https://vip.animeluxe.org/anime?s=$encodedPlusTitle"
+        "det.animerco.org" -> "https://det.animerco.org/?s=$encodedPlusTitleOriginal"
+        "vip.animeluxe.org" -> "https://vip.animeluxe.org/anime?s=$encodedPlusTitleOriginal"
+        
+        // Sites that might need the cleaned title without symbols
         "tv10.egydead.live" -> "https://tv10.egydead.live/?s=$encodedPlusTitle"
         "a.qfilm.tv" -> "https://a.qfilm.tv/search.php?keywords=$encodedPlusTitle&video-id=#"
         "egybests.live" -> "http://egybests.live/?s=$encodedPlusTitle"
@@ -133,7 +153,7 @@ fun ServerSelectionDialog(
         "stardima.com", "watch.stardima.com" -> "https://www.stardima.com/search?query=$encodedTitle"
         "uo.brstej.com" -> "https://uo.brstej.com/search.php?keywords=$encodedPlusTitle&video-id="
         "laaroza.space" -> "https://laaroza.sbs/search.php?keywords=$encodedPlusTitle"
-        else -> "https://$currentSiteName/?s=$encodedPlusTitle"
+        else -> "https://$currentSiteName/?s=$encodedPlusTitleOriginal"
     }
 
     if (isLoading && !isFailed) {
@@ -409,18 +429,13 @@ Dialog(
 
                     val statusMsg = if (isVerified) {
                         androidx.compose.ui.text.buildAnnotatedString {
-                            withStyle(style = androidx.compose.ui.text.SpanStyle(color = Color.White)) { append("عملية تحديث البيانات ") }
-                            withStyle(style = androidx.compose.ui.text.SpanStyle(color = Color(0xFF00C853))) { append("نجحت!") }
-                        }
-                    } else if (isNormal) {
-                        androidx.compose.ui.text.buildAnnotatedString {
-                            withStyle(style = androidx.compose.ui.text.SpanStyle(color = Color.White)) { append("جاري الفحص في ") }
-                            withStyle(style = androidx.compose.ui.text.SpanStyle(color = Color(0xFF00C853))) { append(currentSiteName) }
+                            withStyle(style = androidx.compose.ui.text.SpanStyle(color = Color.White)) { append("تم الاتصال ") }
+                            withStyle(style = androidx.compose.ui.text.SpanStyle(color = Color(0xFF00C853))) { append("بنجاح!") }
                         }
                     } else {
                         androidx.compose.ui.text.buildAnnotatedString {
-                            withStyle(style = androidx.compose.ui.text.SpanStyle(color = Color.White)) { append("جاري عملية ") }
-                            withStyle(style = androidx.compose.ui.text.SpanStyle(color = Color(0xFFFF1111))) { append("تحديث البيانات...") }
+                            withStyle(style = androidx.compose.ui.text.SpanStyle(color = Color.White)) { append("البحث في ") }
+                            withStyle(style = androidx.compose.ui.text.SpanStyle(color = Color(0xFF00C853))) { append(currentSiteName) }
                         }
                     }
 
@@ -458,7 +473,7 @@ Dialog(
                             statusColor = activeColor
                         )
                         StatusBadge(
-                            text = "تحديث البيانات",
+                            text = "جلب السيرفرات",
                             icon = androidx.compose.material.icons.Icons.Outlined.Sync,
                             statusColor = activeColor
                         )
