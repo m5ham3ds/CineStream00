@@ -74,6 +74,7 @@ fun ServerSelectionDialog(
     var isFailed by remember { mutableStateOf(false) }
     var bypassStatus by remember { mutableStateOf("CHECKING_CLOUDFLARE") }
     var showCancelConfirmDialog by remember { mutableStateOf(false) }
+    var isNetworkError by remember { mutableStateOf(false) }
     var retryTrigger by remember { mutableIntStateOf(0) }
 
     // --- Quality Extraction States ---
@@ -275,8 +276,9 @@ Dialog(
                 if (isLoading) {
                     if (isLoading && !isFailed) {
                         key(retryTrigger) {
+                            Box(modifier = if (isCloudflare) Modifier.fillMaxWidth().height(450.dp) else Modifier.size(1.dp).alpha(0f)) {
                             AndroidView(
-                                modifier = if (isCloudflare) Modifier.fillMaxWidth().height(450.dp) else Modifier.size(1.dp).alpha(0.01f),
+                                modifier = Modifier.fillMaxSize(),
                                 factory = { ctx ->
                                     WebView(ctx).apply {
                                         setLayerType(android.view.View.LAYER_TYPE_SOFTWARE, null)
@@ -368,6 +370,14 @@ Dialog(
                                             override fun onReceivedSslError(view: WebView?, handler: android.webkit.SslErrorHandler?, error: android.net.http.SslError?) {
                                                 handler?.proceed()
                                             }
+                                            override fun onReceivedError(view: WebView?, request: android.webkit.WebResourceRequest?, error: android.webkit.WebResourceError?) {
+                                                super.onReceivedError(view, request, error)
+                                                if (request?.isForMainFrame == true) {
+                                                    Handler(Looper.getMainLooper()).post {
+                                                        isNetworkError = true
+                                                    }
+                                                }
+                                            }
                                             
                                             override fun onPageFinished(view: WebView?, url: String?) {
                                                 super.onPageFinished(view, url)
@@ -386,10 +396,47 @@ Dialog(
                                     }
                                 }
                             )
+                        } // End AndroidView Box
                         }
                     }
 
-                    if (!isCloudflare) {
+                    if (isNetworkError) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                imageVector = androidx.compose.material.icons.Icons.Default.Close,
+                                contentDescription = "Network Error",
+                                tint = Color(0xFFFF1111),
+                                modifier = Modifier.size(64.dp)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "حدث خطأ في الاتصال بالإنترنت",
+                                color = Color.White,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "يرجى التحقق من الشبكة والمحاولة مرة أخرى.",
+                                color = Color.Gray,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                            Spacer(modifier = Modifier.height(24.dp))
+                            Button(
+                                onClick = { 
+                                    isNetworkError = false
+                                    retryTrigger++ 
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = activeColor),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text("إعادة المحاولة", color = Color.White, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    } else if (!isCloudflare) {
                         // Loading State matching design
                         Box(
                             contentAlignment = Alignment.Center,
