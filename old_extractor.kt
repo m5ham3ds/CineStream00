@@ -197,7 +197,6 @@ fun HiddenVideoExtractor(
                         }
                     }
                 }
-            }
         },
         update = { webView ->
             // Use getTag to store the original loaded url to avoid reloading when webView.url changes due to internal navigation
