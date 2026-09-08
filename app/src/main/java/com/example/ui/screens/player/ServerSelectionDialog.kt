@@ -165,7 +165,7 @@ fun ServerSelectionDialog(
                         domStorageEnabled = true
                         databaseEnabled = true
                         javaScriptCanOpenWindowsAutomatically = true
-                        userAgentString = WebSettings.getDefaultUserAgent(ctx)
+                        userAgentString = "Mozilla/5.0 (Linux; Android 13; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Mobile Safari/537.36"
                         mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
                     }
                     val cookieManager = CookieManager.getInstance()
@@ -250,17 +250,17 @@ fun ServerSelectionDialog(
                         }
                     }, "AndroidBridge")
 
-                    webViewClient = object : WebViewClient() {
+                    webViewClient = object : com.ead.lib.cloudflare_bypass.BypassClient() {
                         override fun onReceivedSslError(view: WebView?, handler: android.webkit.SslErrorHandler?, error: android.net.http.SslError?) {
                             handler?.proceed()
                         }
 
-                        override fun onPageFinished(view: WebView, url: String) {
-                            super.onPageFinished(view, url)
+                        override fun onPageFinishedByPassed(view: WebView?, url: String?) {
+                            super.onPageFinishedByPassed(view, url)
                             
                             val isMovieStr = if (isMovie) "true" else "false"
                             val autoPlayScript = com.example.ui.screens.player.SiteScripts.getScriptForSite(currentSiteName, isMovie, episode, title)
-                            view.evaluateJavascript(autoPlayScript, null)
+                            view?.evaluateJavascript(autoPlayScript, null)
                         }
                     }
                 }

@@ -82,6 +82,7 @@ googleServices { missingGoogleServicesStrategy = MissingGoogleServicesStrategy.W
 // Some unused dependencies are commented out below instead of being removed.
 // This makes it easy to add them back in the future if needed.
 dependencies {
+  implementation("com.github.darkryh:Cloudflare-Bypass:0.0.5")
   implementation("com.startapp:inapp-sdk:5.1.0")
   implementation(libs.cloudinary.android)
     implementation(libs.play.services.nearby)
