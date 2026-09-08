@@ -276,7 +276,7 @@ Dialog(
                 if (isLoading) {
                     if (isLoading && !isFailed) {
                         key(retryTrigger) {
-                            Box(modifier = if (isCloudflare) Modifier.fillMaxWidth().height(450.dp) else Modifier.size(1.dp).alpha(0f)) {
+                            Box(modifier = if (bypassStatus == "CHECKING_CLOUDFLARE" || bypassStatus == "CLOUDFLARE") Modifier.fillMaxWidth().height(450.dp) else Modifier.size(1.dp).alpha(0f)) {
                             AndroidView(
                                 modifier = Modifier.fillMaxSize(),
                                 factory = { ctx ->
@@ -478,15 +478,30 @@ Dialog(
                             )
                         }
                         Spacer(modifier = Modifier.height(32.dp))
-                        val statusMsg = if (isCloudflare) {
-                            androidx.compose.ui.text.buildAnnotatedString {
-                                withStyle(style = androidx.compose.ui.text.SpanStyle(color = Color.White)) { append("جاري التحديث ") }
-                                withStyle(style = androidx.compose.ui.text.SpanStyle(color = Color(0xFFFF1111))) { append("البيانات") }
+                        val statusMsg = when (bypassStatus) {
+                            "CHECKING_CLOUDFLARE" -> {
+                                androidx.compose.ui.text.buildAnnotatedString {
+                                    withStyle(style = androidx.compose.ui.text.SpanStyle(color = Color.White)) { append("تأمين الاتصال بموقع ") }
+                                    withStyle(style = androidx.compose.ui.text.SpanStyle(color = Color(0xFF00C853))) { append(currentSiteName) }
+                                }
                             }
-                        } else {
-                            androidx.compose.ui.text.buildAnnotatedString {
-                                withStyle(style = androidx.compose.ui.text.SpanStyle(color = Color.White)) { append("جاري البحث في ") }
-                                withStyle(style = androidx.compose.ui.text.SpanStyle(color = Color(0xFF00C853))) { append(currentSiteName) }
+                            "CLOUDFLARE" -> {
+                                androidx.compose.ui.text.buildAnnotatedString {
+                                    withStyle(style = androidx.compose.ui.text.SpanStyle(color = Color.White)) { append("تخطي حماية ") }
+                                    withStyle(style = androidx.compose.ui.text.SpanStyle(color = Color(0xFFFF1111))) { append("Cloudflare") }
+                                }
+                            }
+                            "VERIFIED" -> {
+                                androidx.compose.ui.text.buildAnnotatedString {
+                                    withStyle(style = androidx.compose.ui.text.SpanStyle(color = Color.White)) { append("تم التخطي ") }
+                                    withStyle(style = androidx.compose.ui.text.SpanStyle(color = Color(0xFF00C853))) { append("بنجاح") }
+                                }
+                            }
+                            else -> {
+                                androidx.compose.ui.text.buildAnnotatedString {
+                                    withStyle(style = androidx.compose.ui.text.SpanStyle(color = Color.White)) { append("جاري البحث في ") }
+                                    withStyle(style = androidx.compose.ui.text.SpanStyle(color = Color(0xFF00C853))) { append(currentSiteName) }
+                                }
                             }
                         }
                         Text(
@@ -700,6 +715,7 @@ Dialog(
                                     extractedServerLinks = emptyMap()
                                     isLoading = true
                                     isFailed = false
+                                    bypassStatus = "CHECKING_CLOUDFLARE"
                                     retryTrigger++
                                 },
                                 modifier = Modifier.fillMaxWidth()
