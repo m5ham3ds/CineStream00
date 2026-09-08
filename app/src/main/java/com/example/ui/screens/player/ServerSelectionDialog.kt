@@ -278,7 +278,7 @@ Dialog(
                         key(retryTrigger) {
                             Box(
                                 modifier = if (bypassStatus == "CLOUDFLARE" || bypassStatus == "CHECKING_CLOUDFLARE") 
-                                    Modifier.width(320.dp).height(150.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).alpha(if (bypassStatus == "CLOUDFLARE") 1f else 0.01f)
+                                    Modifier.fillMaxWidth().height(450.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
                                 else 
                                     Modifier.size(1.dp).alpha(0f),
                                 contentAlignment = Alignment.Center
@@ -287,10 +287,9 @@ Dialog(
                                 modifier = Modifier.fillMaxSize(),
                                 factory = { ctx ->
                                     WebView(ctx).apply {
-                                        // CLEAR PREVIOUS SESSION DATA TO FORCE RE-VERIFICATION
-                                        android.webkit.WebStorage.getInstance().deleteAllData()
-                                        android.webkit.CookieManager.getInstance().removeAllCookies(null)
-                                        android.webkit.CookieManager.getInstance().flush()
+                                        // ENABLE COOKIES AND DOM STORAGE FOR PERSISTENCE
+                                        android.webkit.CookieManager.getInstance().setAcceptCookie(true)
+                                        android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
                                         
                                         setLayerType(android.view.View.LAYER_TYPE_SOFTWARE, null)
                                         settings.apply {
@@ -316,6 +315,7 @@ fun logDebug(msg: String) {
                                             fun sendBypassStatus(status: String) {
                                                 Handler(Looper.getMainLooper()).post {
                                                     if (status == "NORMAL" && (bypassStatus == "CHECKING_CLOUDFLARE" || bypassStatus == "CLOUDFLARE")) {
+                                                        android.webkit.CookieManager.getInstance().flush()
                                                         bypassStatus = "VERIFIED"
                                                         Handler(Looper.getMainLooper()).postDelayed({
                                                             if (bypassStatus == "VERIFIED") bypassStatus = "NORMAL"
