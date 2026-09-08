@@ -483,7 +483,7 @@ object SiteScripts {
                         }
                     }
                     var searchTarget = baseTitle;
-                    var normTarget = searchTarget.toLowerCase().replace(/[^a-z0-9]/gi, ' ').replace(/\s+/g, ' ').trim();
+                    var normTarget = searchTarget.toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]/gi, ' ').replace(/\s+/g, ' ').trim();
                     var words = normTarget.split(' ').filter(function(w){ return w.length > 1; });
                     
                     var allLinks = document.querySelectorAll('a');
@@ -497,14 +497,14 @@ object SiteScripts {
                         }
                     }
                     
-                    if (results.length > 0) {
+                    if (results.length > 0 && normTarget.length > 0) {
                         var targetResult = null;
                         var bestMatchCount = 0;
                         var bestMatchElement = null;
                         for (var i = 0; i < results.length; i++) {
                             var linkText = ((results[i].textContent || results[i].innerText || '') || '') + " " + (results[i].getAttribute('title') || '');
                             var linkHref = results[i].href || '';
-                            linkText = linkText.toLowerCase().replace(/[^a-z0-9]/gi, ' ').replace(/\s+/g, ' ').trim();
+                            linkText = linkText.toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]/gi, ' ').replace(/\s+/g, ' ').trim();
                             
                             var matchCount = 0;
                             // Exact title match gets huge bonus
