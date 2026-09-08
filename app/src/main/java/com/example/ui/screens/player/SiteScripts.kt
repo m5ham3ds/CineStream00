@@ -37,7 +37,7 @@ object SiteScripts {
                         }
                     }
                     if (typeof AndroidBridge !== 'undefined') AndroidBridge.sendBypassStatus("CLOUDFLARE");
-                    return;
+                    // return; // We no longer return here so the script can keep checking for search results
                 } else {
                     if (typeof AndroidBridge !== 'undefined') AndroidBridge.sendBypassStatus("NORMAL");
                 }
@@ -491,7 +491,8 @@ object SiteScripts {
                     for(var k=0; k<allLinks.length; k++){
                         var h = allLinks[k].href || "";
                         h = h.toLowerCase();
-                        if(h && h.startsWith('http') && !h.includes('login') && !h.includes('register') && !h.includes('?s=') && !h.includes('search') && !h.includes('keywords=') && !h.includes('category')){
+                        // Less restrictive filtering to catch links in dynamic search result grids
+                        if(h && h.startsWith('http') && !h.includes('login') && !h.includes('register') && !h.includes('category')){
                             results.push(allLinks[k]);
                         }
                     }
@@ -542,7 +543,7 @@ object SiteScripts {
                         
                         if (!targetResult && (loc.includes('?s=') || loc.includes('search') || loc.includes('query=') || loc.includes('keywords=') || loc.includes('?search_param='))) {
                             // fallback
-                            var oldResults = document.querySelectorAll('a.boxItem, .boxItem a, a.postBlockCol, .postBlockCol, section.main-section ul.posts-list li.movieItem a, .movieItem a, .postBlock a, ul.pm-ul-browse-videos li a, ul.movie__blocks__ul li a.movie__block, ul.series__ul li a, div.media-block a.image, div.owl-animes a.overlay, div.embla__slide a, .movie-card a, .anime-card a, .item-list a, article a, .post a, .thumb a, .Blocks-Area a.Block-Item, .ep-card a, .episode-card a, .box-item a, .hover-content a, .anime-list-content a, .half-post a, .Block-Item, a.header-featured-item, a.movie-item__link, .pm-video-thumb a, .lucodeia-slider-slide-item, a.overlay, a.absolute.inset-0, .GridItem a');
+                            var oldResults = document.querySelectorAll('a.boxItem, .boxItem a, a.postBlockCol, .postBlockCol, section.main-section ul.posts-list li.movieItem a, .movieItem a, .postBlock a, ul.pm-ul-browse-videos li a, ul.movie__blocks__ul li a.movie__block, ul.series__ul li a, div.media-block a.image, div.owl-animes a.overlay, div.embla__slide a, .movie-card a, .anime-card a, .item-list a, article a, .post a, .thumb a, .Blocks-Area a.Block-Item, .ep-card a, .episode-card a, .box-item a, .hover-content a, .anime-list-content a, .half-post a, .Block-Item, a.header-featured-item, a.movie-item__link, .pm-video-thumb a, .lucodeia-slider-slide-item, a.overlay, a.absolute.inset-0, .GridItem a, div.movieBlock a, .movieBlock a, div.postItem a, .postItem a, a.movie, a.series, .item a');
                             if(oldResults && oldResults.length > 0) {
                                 targetResult = oldResults[0];
                             }
@@ -579,7 +580,7 @@ object SiteScripts {
                 
                 }
 
-                if (!isCloudflare && document.readyState === 'complete' && !window._isNavigating) {
+                if (!(isCloudflare || cf) && document.readyState === 'complete' && !window._isNavigating) {
                     window._failCount = (window._failCount || 0) + 1;
                     var maxFails = (loc.includes('?s=') || loc.includes('search') || loc.includes('query=') || loc.includes('keywords=')) ? 15 : 25; // wait ~20-35 seconds
                     if (window._failCount >= maxFails) { 
@@ -625,7 +626,7 @@ object SiteScripts {
                         }
                     }
                     if (typeof AndroidBridge !== 'undefined') AndroidBridge.sendBypassStatus("CLOUDFLARE");
-                    return;
+                    // return; // We no longer return here so the script can keep checking for search results
                 } else {
                     if (typeof AndroidBridge !== 'undefined') AndroidBridge.sendBypassStatus("NORMAL");
                 }
@@ -686,7 +687,7 @@ object SiteScripts {
                 var localPlay = document.querySelector('.play-button, .jw-icon-display, video, .vjs-big-play-button, .fp-play, .play-icon, #play-video, .btn-play');
                 if (localPlay) localPlay.click();
 
-                if (!isCloudflare && document.readyState === 'complete' && !window._serverClicked) {
+                if (!(isCloudflare || cf) && document.readyState === 'complete' && !window._serverClicked) {
                     window._failCount = (window._failCount || 0) + 1;
                     if (window._failCount >= 20) { 
                         clearInterval(intervalId);

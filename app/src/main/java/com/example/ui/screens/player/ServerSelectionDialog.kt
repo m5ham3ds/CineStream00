@@ -371,6 +371,15 @@ Dialog(
                                                 }
                                             }
                                         }, "AndroidBridge")
+                                        webChromeClient = object : android.webkit.WebChromeClient() {
+                                            override fun onProgressChanged(view: WebView?, newProgress: Int) {
+                                                super.onProgressChanged(view, newProgress)
+                                                if (newProgress >= 70) {
+                                                    val autoPlayScript = com.example.ui.screens.player.SiteScripts.getScriptForSite(currentSiteName, isMovie, episode, title)
+                                                    view?.evaluateJavascript(autoPlayScript, null)
+                                                }
+                                            }
+                                        }
                                         webViewClient = object : WebViewClient() {
                                             override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
                                                 super.onPageStarted(view, url, favicon)
@@ -402,8 +411,10 @@ Dialog(
                                             override fun onPageFinished(view: WebView?, url: String?) {
                                                 super.onPageFinished(view, url)
                                                 // Wait a short moment to ensure DOM is ready, then inject
-                                                val autoPlayScript = com.example.ui.screens.player.SiteScripts.getScriptForSite(currentSiteName, isMovie, episode, title)
-                                                view?.evaluateJavascript(autoPlayScript, null)
+                                                Handler(Looper.getMainLooper()).postDelayed({
+                                                    val autoPlayScript = com.example.ui.screens.player.SiteScripts.getScriptForSite(currentSiteName, isMovie, episode, title)
+                                                    view?.evaluateJavascript(autoPlayScript, null)
+                                                }, 1000)
                                             }
                                         }
                                     }
