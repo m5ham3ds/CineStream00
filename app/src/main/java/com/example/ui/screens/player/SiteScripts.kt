@@ -9,11 +9,40 @@ object SiteScripts {
                 var bodyText = document.body ? document.body.innerText : "";
                 var isCloudflareText = bodyText.includes('Performing security verification') || bodyText.includes('protect against malicious bots') || bodyText.includes('verifies you are not a bot');
                 var isCloudflare = isCloudflareTitle || isCloudflareText;
-                var cf = document.querySelector('.cf-turnstile-wrapper, #challenge-stage, #challenge-form, .mark-as-human');
+                var cf = document.querySelector('.cf-turnstile-wrapper, #challenge-stage, #challenge-form, .mark-as-human, #trk_jschal_js');
                 
                 if (isCloudflare || cf) {
+                    if (!window._cfCssInjected) {
+                        window._cfCssInjected = true;
+                        var style = document.createElement('style');
+                        style.innerHTML = `
+                            body { background-color: #16161A !important; }
+                            body > * { display: none !important; }
+                            body > #challenge-form, 
+                            body > #challenge-stage, 
+                            body > .cf-turnstile-wrapper,
+                            body > iframe,
+                            body > #trk_jschal_js { 
+                                display: block !important; 
+                                position: absolute !important; 
+                                top: 50% !important; 
+                                left: 50% !important; 
+                                transform: translate(-50%, -50%) !important; 
+                                z-index: 999999 !important;
+                                margin: 0 !important;
+                            }
+                        `;
+                        document.head.appendChild(style);
+                        // Also try to find if it's nested
+                        if (cf && cf.parentElement && cf.parentElement !== document.body) {
+                            cf.parentElement.style.display = 'block';
+                            cf.parentElement.style.position = 'absolute';
+                            cf.parentElement.style.top = '50%';
+                            cf.parentElement.style.left = '50%';
+                            cf.parentElement.style.transform = 'translate(-50%, -50%)';
+                        }
+                    }
                     if (typeof AndroidBridge !== 'undefined') AndroidBridge.sendBypassStatus("CLOUDFLARE");
-                    if (cf) cf.click();
                     return;
                 } else {
                     if (typeof AndroidBridge !== 'undefined') AndroidBridge.sendBypassStatus("NORMAL");
@@ -30,7 +59,10 @@ object SiteScripts {
                         // cimalight watch.php -> click the embed or video to get iframe url
                         // handled by extractor below automatically
                     } else {
-                        window.location.href = window.location.href.replace('watch.php', 'play.php');
+                        if (!window._isNavigating) {
+                            window._isNavigating = true;
+                            window.location.href = window.location.href.replace('watch.php', 'play.php');
+                        }
                         return;
                     }
                 }
@@ -523,7 +555,10 @@ object SiteScripts {
                         }
                         
                         if (targetResult) {
-                            window.location.href = targetResult.href;
+                            if (!window._isNavigating) {
+                                window._isNavigating = true;
+                                window.location.href = targetResult.href;
+                            }
                             return;
                         }
                     } else if (loc.includes('searchq') || loc.includes('search') || loc.includes('?s=')) {
@@ -549,9 +584,9 @@ object SiteScripts {
                 
                 }
 
-                if (!isCloudflare && document.readyState === 'complete') {
+                if (!isCloudflare && document.readyState === 'complete' && !window._isNavigating) {
                     window._failCount = (window._failCount || 0) + 1;
-                    var maxFails = (loc.includes('?s=') || loc.includes('search') || loc.includes('query=') || loc.includes('keywords=')) ? 2 : 4;
+                    var maxFails = (loc.includes('?s=') || loc.includes('search') || loc.includes('query=') || loc.includes('keywords=')) ? 15 : 25; // wait ~20-35 seconds
                     if (window._failCount >= maxFails) { 
                         clearInterval(intervalId);
                         if (typeof AndroidBridge !== 'undefined') AndroidBridge.sendFailed();
@@ -567,8 +602,41 @@ object SiteScripts {
         (function() {
             var intervalId = setInterval(function() {
                 var isCloudflare = document.title.includes('Just a moment') || document.title.includes('Cloudflare') || document.title.includes('Attention Required');
-                var cf = document.querySelector('.cf-turnstile-wrapper, #challenge-stage, #challenge-form, .mark-as-human');
-                if (cf) { cf.click(); return; }
+                var cf = document.querySelector('.cf-turnstile-wrapper, #challenge-stage, #challenge-form, .mark-as-human, #trk_jschal_js');
+                
+                if (isCloudflare || cf) {
+                    if (!window._cfCssInjected) {
+                        window._cfCssInjected = true;
+                        var style = document.createElement('style');
+                        style.innerHTML = `
+                            body { background-color: #16161A !important; }
+                            body > * { display: none !important; }
+                            body > #challenge-form, 
+                            body > #challenge-stage, 
+                            body > .cf-turnstile-wrapper,
+                            body > iframe,
+                            body > #trk_jschal_js { 
+                                display: block !important; 
+                                position: absolute !important; 
+                                top: 50% !important; 
+                                left: 50% !important; 
+                                transform: translate(-50%, -50%) !important; 
+                                z-index: 999999 !important;
+                                margin: 0 !important;
+                            }
+                        `;
+                        document.head.appendChild(style);
+                        // Also try to find if it's nested
+                        if (cf && cf.parentElement && cf.parentElement !== document.body) {
+                            cf.parentElement.style.display = 'block';
+                            cf.parentElement.style.position = 'absolute';
+                            cf.parentElement.style.top = '50%';
+                            cf.parentElement.style.left = '50%';
+                            cf.parentElement.style.transform = 'translate(-50%, -50%)';
+                        }
+                    }
+                    return;
+                }
                 
                 var targetId = "${targetServerId ?: ""}";
                 if (targetId && !window._serverClicked) {
@@ -626,9 +694,9 @@ object SiteScripts {
                 var localPlay = document.querySelector('.play-button, .jw-icon-display, video, .vjs-big-play-button, .fp-play, .play-icon, #play-video, .btn-play');
                 if (localPlay) localPlay.click();
 
-                if (!isCloudflare && document.readyState === 'complete') {
+                if (!isCloudflare && document.readyState === 'complete' && !window._serverClicked) {
                     window._failCount = (window._failCount || 0) + 1;
-                    if (window._failCount >= 4) { 
+                    if (window._failCount >= 20) { 
                         clearInterval(intervalId);
                         if (typeof AndroidBridge !== 'undefined') AndroidBridge.sendFailed();
                     }
