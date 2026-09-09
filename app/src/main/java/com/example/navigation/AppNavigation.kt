@@ -304,6 +304,19 @@ fun AppNavigation() {
 
                     NavigationDrawerItem(
                         icon = { Icon(Icons.Outlined.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface) },
+                        label = { Text("الإضافات", color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp) },
+                        selected = currentRoute == Screen.Extensions.route,
+                        colors = NavigationDrawerItemDefaults.colors(unselectedContainerColor = Color.Transparent),
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            if (currentRoute != Screen.Extensions.route) {
+                                navController.navigate(Screen.Extensions.route)
+                            }
+                        },
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                    NavigationDrawerItem(
+                        icon = { Icon(Icons.Outlined.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface) },
                         label = { Text(stringResource(R.string.settings), color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp) },
                         selected = currentRoute == Screen.Settings.route,
                         colors = NavigationDrawerItemDefaults.colors(unselectedContainerColor = Color.Transparent),
@@ -457,7 +470,7 @@ fun AppNavigation() {
             containerColor = MaterialTheme.colorScheme.background,
             topBar = {
                 Column {
-                    if (bottomBarRoutes.contains(currentRoute) || currentRoute in listOf(Screen.Profile.route, Screen.Downloads.route, Screen.Settings.route, Screen.About.route, Screen.Social.route, Screen.Share.route)) {
+                    if (bottomBarRoutes.contains(currentRoute) || currentRoute in listOf(Screen.Profile.route, Screen.Downloads.route, Screen.Settings.route, Screen.Extensions.route, Screen.About.route, Screen.Social.route, Screen.Share.route)) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -765,6 +778,7 @@ navController.navigate(Screen.SeriesDetails.createRoute(id)) },
                     SubscriptionScreen(onBack = { navController.popBackStack() })
                 }
 
+                composable(Screen.Extensions.route) { com.example.ui.screens.extensions.ExtensionsScreen(onBackClick = { navController.popBackStack() }) }
                 composable(Screen.Settings.route) { SettingsScreen() }
                 composable(Screen.About.route) { AboutScreen() }
                 composable(Screen.Trending.route) {
@@ -846,6 +860,7 @@ navController.navigate(Screen.SeriesDetails.createRoute(it)) }
                         movieId = movieId, 
                         onBack = { navController.popBackStack() },
                         onPersonClick = { personId -> navController.navigate("person/$personId") },
+                        onNavigateToExtensions = { navController.navigate(Screen.Extensions.route) },
                         onPlay = { title, url, server, website -> 
                             if (url.startsWith("trailer:")) {
                                 val trailerId = url.removePrefix("trailer:")
@@ -866,6 +881,7 @@ navController.navigate(Screen.SeriesDetails.createRoute(it)) }
                         seriesId = seriesId, 
                         onBack = { navController.popBackStack() },
                         onPersonClick = { personId -> navController.navigate("person/$personId") },
+                        onNavigateToExtensions = { navController.navigate(Screen.Extensions.route) },
                         onPlay = { title, url, server, website -> 
                             if (url.startsWith("trailer:")) {
                                 val trailerId = url.removePrefix("trailer:")

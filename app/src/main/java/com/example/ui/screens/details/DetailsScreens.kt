@@ -27,6 +27,8 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 
 import androidx.compose.runtime.*
 import com.example.ui.screens.player.ServerSelectionDialog
+import com.example.extensions.ExtensionManager
+import com.example.ui.screens.extensions.NoExtensionsDialog
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,6 +61,7 @@ fun MovieDetailsScreen(
     movieId: String, 
     onBack: () -> Unit,
     onPlay: (String, String, String?, String?) -> Unit,
+    onNavigateToExtensions: () -> Unit = {},
     viewModel: MovieDetailsViewModel = viewModel(factory = ViewModelFactory())
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -87,6 +90,7 @@ fun MovieDetailsScreen(
             val ctx = LocalContext.current
             val historyRepository = remember { com.example.data.repository.HistoryRepository(ctx) }
             var showSourceSheet by remember { mutableStateOf(false) }
+    var showNoExtensionsDialog by remember { mutableStateOf(false) }
             var isDownloadMode by remember { mutableStateOf(false) }
             var selectedTrailerId by remember { mutableStateOf<String?>(null) }
 
@@ -196,7 +200,13 @@ fun MovieDetailsScreen(
                                 onPlay(movie.title, "local_offline_file://${downloadItem.id}", null, null)
                             } else {
                                 isDownloadMode = false
-                                showSourceSheet = true
+                                
+                                        if (ExtensionManager.installedExtensions.value.isEmpty()) {
+                                            showNoExtensionsDialog = true
+                                        } else {
+                                            showSourceSheet = true
+                                        }
+
                             }
                         },
                         modifier = Modifier.weight(1f).height(50.dp),
@@ -212,7 +222,13 @@ fun MovieDetailsScreen(
                                 showDeleteConfirm = true
                             } else if (downloadItem == null) {
                                 isDownloadMode = true
-                                showSourceSheet = true
+                                
+                                        if (ExtensionManager.installedExtensions.value.isEmpty()) {
+                                            showNoExtensionsDialog = true
+                                        } else {
+                                            showSourceSheet = true
+                                        }
+
                             }
                         },
                         modifier = Modifier.size(50.dp).background(Color.DarkGray, CircleShape)
@@ -274,6 +290,20 @@ fun MovieDetailsScreen(
             }
 
             }
+            if (showNoExtensionsDialog) {
+                NoExtensionsDialog(
+                    onDismiss = { showNoExtensionsDialog = false },
+                    onGoToExtensions = { 
+                        onNavigateToExtensions()
+                    },
+                    onRetry = {
+                        if (ExtensionManager.installedExtensions.value.isNotEmpty()) {
+                            showNoExtensionsDialog = false
+                            showSourceSheet = true
+                        }
+                    }
+                )
+            }
             if (showSourceSheet) {
                 ServerSelectionDialog(
                     title = movie.originalTitle ?: movie.title,
@@ -325,7 +355,8 @@ fun SeriesDetailsScreen(
     onPersonClick: (String) -> Unit = {},
     seriesId: String,
     onBack: () -> Unit,
-    onPlay: (String, String, String?, String?) -> Unit
+    onPlay: (String, String, String?, String?) -> Unit,
+    onNavigateToExtensions: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val viewModel: SeriesDetailsViewModel = viewModel(factory = ViewModelFactory())

@@ -1,4 +1,10 @@
 package com.example.ui.screens.player
+
+import androidx.compose.animation.togetherWith
+
+import com.example.extensions.ProviderExtension
+
+import com.example.extensions.ExtensionManager
 import androidx.compose.material.icons.filled.ArrowBack
 
 import android.annotation.SuppressLint
@@ -56,14 +62,16 @@ fun ServerSelectionDialog(
 ) {
     val coroutineScope = rememberCoroutineScope()
     
-    val priorityAnimeSites = listOf("witanime.you", "w1.anime4up.rest", "animeblkom.net", "animeat.net", "arabanime.net", "det.animerco.org", "vip.animeluxe.org")
-    val priorityMovieSites = listOf("tv10.egydead.live", "a.qfilm.tv", "egybests.live", "arabseed.wine", "topcinema.io", "z1.almeshkah.net", "arabseed-tv.com", "e.cimalight.co", "stardima.com", "watch.stardima.com", "uo.brstej.com", "laaroza.space")
-    val prioritySeriesSites = listOf("tv10.egydead.live", "a.qfilm.tv", "egybests.live", "arabseed.wine", "topcinema.io", "z1.almeshkah.net", "arabseed-tv.com", "e.cimalight.co", "stardima.com", "watch.stardima.com", "uo.brstej.com", "laaroza.space")
-
-    val prioritySites = if (isAnime) priorityAnimeSites else if (isMovie) priorityMovieSites else prioritySeriesSites
-
+    
+    val installedExtensions = ExtensionManager.installedExtensions.collectAsState().value
+    val prioritySites = installedExtensions.filter { 
+        if (isAnime) it.isAnime else if (isMovie) it.isMovie else it.isSeries 
+    }
+    val safeSites = if (prioritySites.isNotEmpty()) prioritySites else installedExtensions
+    
     var currentSiteIndex by remember { mutableStateOf(0) }
-    var currentSiteName by remember { mutableStateOf(prioritySites[0]) }
+    var currentExtension by remember { mutableStateOf(safeSites[0]) }
+    val currentSiteName = currentExtension.name
     
     var isLoading by remember { mutableStateOf(true) }
     var loadingMessage by remember { mutableStateOf("جاري الفحص وتخطي الحماية...") }
@@ -90,7 +98,7 @@ fun ServerSelectionDialog(
             return@LaunchedEffect
         }
         
-        currentSiteName = prioritySites[currentSiteIndex]
+        currentExtension = safeSites[currentSiteIndex]
         bypassStatus = "CHECKING_CLOUDFLARE"
         loadingMessage = "جاري الفحص في موقع $currentSiteName..."
         extractedServers = emptyList()
@@ -132,27 +140,7 @@ fun ServerSelectionDialog(
     val encodedPlusTitle = URLEncoder.encode(cleanTitle, "UTF-8").replace("%20", "+")
     
     // We use the original encoded title for all sites as requested, so we don't break their search
-    val searchUrl = when (currentSiteName) {
-        "witanime.you" -> "https://witanime.you/?search_param=animes&s=$encodedPlusTitleOriginal"
-        "w1.anime4up.rest" -> "https://w1.anime4up.rest/?s=$encodedTitleOriginal"
-        "animeblkom.net" -> "https://animeblkom.net/search?query=$encodedPlusTitleOriginal"
-        "animeat.net" -> "https://animeat.net/"
-        "arabanime.net" -> "https://www.arabanime.net/searchq"
-        "det.animerco.org" -> "https://det.animerco.org/?s=$encodedPlusTitleOriginal"
-        "vip.animeluxe.org" -> "https://vip.animeluxe.org/anime?s=$encodedPlusTitleOriginal"
-        "tv10.egydead.live" -> "https://tv10.egydead.live/?s=$encodedPlusTitleOriginal"
-        "a.qfilm.tv" -> "https://a.qfilm.tv/search.php?keywords=$encodedPlusTitleOriginal&video-id=#"
-        "egybests.live" -> "http://egybests.live/?s=$encodedPlusTitleOriginal"
-        "arabseed.wine" -> "https://www.arabseed.wine/?s=$encodedPlusTitleOriginal&type="
-        "topcinema.io" -> "https://topcinema.io/"
-        "z1.almeshkah.net" -> "https://z1.almeshkah.net/search.php?keywords=$encodedPlusTitleOriginal&video-id="
-        "arabseed-tv.com" -> "https://arabseed-tv.com/"
-        "e.cimalight.co" -> "https://e.cimalight.co/search.php?keywords=$encodedPlusTitleOriginal&video-id=#"
-        "stardima.com", "watch.stardima.com" -> "https://www.stardima.com/search?query=$encodedTitleOriginal"
-        "uo.brstej.com" -> "https://uo.brstej.com/search.php?keywords=$encodedPlusTitleOriginal&video-id="
-        "laaroza.space" -> "https://laaroza.sbs/search.php?keywords=$encodedPlusTitleOriginal"
-        else -> "https://$currentSiteName/?s=$encodedPlusTitleOriginal"
-    }
+    val searchUrl = currentExtension.getSearchUrl(baseTitle, cleanTitle)
 
 
 Dialog(
@@ -278,7 +266,7 @@ Dialog(
                     androidx.compose.animation.AnimatedContent(
                         targetState = bypassStatus,
                         transitionSpec = {
-                            androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(300)).with(androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(300)))
+                            androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(300)) togetherWith androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(300))
                         }, label = "BypassAnimation"
                     ) { currentStatus ->
                         Box(
@@ -387,7 +375,7 @@ Dialog(
                                                 override fun onProgressChanged(view: WebView?, newProgress: Int) {
                                                     super.onProgressChanged(view, newProgress)
                                                     if (newProgress >= 30) {
-                                                        val autoPlayScript = com.example.ui.screens.player.SiteScripts.getScriptForSite(currentSiteName, isMovie, episode, title)
+                                                        val autoPlayScript = currentExtension.getExtractionScript(isMovie, episode, title)
                                                         view?.evaluateJavascript(autoPlayScript, null)
                                                     }
                                                 }
@@ -452,7 +440,7 @@ Dialog(
                                                                 android.webkit.CookieManager.getInstance().flush()
                                                                 bypassStatus = "NORMAL"
                                                             }
-                                                            val autoPlayScript = com.example.ui.screens.player.SiteScripts.getScriptForSite(currentSiteName, isMovie, episode, title)
+                                                            val autoPlayScript = currentExtension.getExtractionScript(isMovie, episode, title)
                                                             view?.evaluateJavascript(autoPlayScript, null)
                                                         } else {
                                                             android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
@@ -646,7 +634,7 @@ Dialog(
                             isFailed = false
                             isLoading = true
                             currentSiteIndex = 0
-                            currentSiteName = prioritySites[0]
+                            currentExtension = safeSites[0]
                             retryTrigger++
                         },
                         modifier = Modifier.fillMaxWidth().height(50.dp),
@@ -778,7 +766,7 @@ Dialog(
                             TextButton(
                                 onClick = {
                                     currentSiteIndex++
-                                    currentSiteName = prioritySites[currentSiteIndex]
+                                    currentExtension = safeSites[currentSiteIndex]
                                     extractedServers = emptyList()
                                     extractedServerLinks = emptyMap()
                                     isLoading = true

@@ -2,6 +2,9 @@ package com.example
 
 import android.Manifest
 import android.os.Build
+import com.example.extensions.ExtensionManager
+import com.example.extensions.providers.WitAnimeExtension
+import com.example.extensions.providers.LegacySiteExtension
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -25,7 +28,23 @@ import com.startapp.sdk.adsbase.StartAppSDK
 
 class MainActivity : AppCompatActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
+    
     super.onCreate(savedInstanceState)
+    
+    ExtensionManager.init(this)
+    ExtensionManager.registerExtension(WitAnimeExtension())
+
+    val legacyAnime = listOf("w1.anime4up.rest", "animeblkom.net", "animeat.net", "arabanime.net", "det.animerco.org", "vip.animeluxe.org")
+    val legacyMovies = listOf("tv10.egydead.live", "a.qfilm.tv", "egybests.live", "arabseed.wine", "topcinema.io", "z1.almeshkah.net", "arabseed-tv.com", "e.cimalight.co", "stardima.com", "watch.stardima.com", "uo.brstej.com", "laaroza.space")
+    
+    legacyAnime.forEach { name ->
+        ExtensionManager.registerExtension(LegacySiteExtension(name, name, "https://$name", true, false, false))
+    }
+    legacyMovies.forEach { name ->
+        ExtensionManager.registerExtension(LegacySiteExtension(name, name, "https://$name", false, true, true))
+    }
+
+
     
     // Initialize Start.io SDK with a placeholder App ID.
     // Replace "208324071" with your actual Start.io App ID.
